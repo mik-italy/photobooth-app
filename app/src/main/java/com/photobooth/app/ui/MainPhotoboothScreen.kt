@@ -48,7 +48,6 @@ fun MainPhotoboothScreen(
     var printerState by remember { mutableStateOf(PrinterState.UNKNOWN) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
-    // Camera permission check
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -122,6 +121,7 @@ fun MainPhotoboothScreen(
                         screenState = PhotoboothScreenState.Composing
                         scope.launch {
                             val sheetBitmap = PhotoStripComposer.createPrintSheet(
+                                context = context,
                                 photos = capturedBitmaps,
                                 settings = settings
                             )
@@ -216,6 +216,9 @@ fun MainPhotoboothScreen(
                             remainingSeconds = settings.countdownSeconds
                         )
                     },
+                    onHomeClicked = {
+                        screenState = PhotoboothScreenState.Idle
+                    },
                     onTimeout = {
                         screenState = PhotoboothScreenState.Idle
                     }
@@ -232,7 +235,7 @@ fun MainPhotoboothScreen(
             }
         }
 
-        // Settings Dialog (No PIN required)
+        // Settings Dialog
         if (showSettingsDialog) {
             SettingsDialog(
                 currentSettings = settings,

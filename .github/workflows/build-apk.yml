@@ -38,19 +38,19 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.2
-        name: "Photobooth App v1.0.2 - 4 Photos Strip, Full Photo Mode & UI Improvements"
+        tag_name: v1.0.3
+        name: "Photobooth App v1.0.3 - Playfair Font, Custom BG, Full Landscape Photo & 5s Timer"
         body: |
-          ### Photobooth Android v1.0.2 📸🖨️
+          ### Photobooth Android v1.0.3 📸🖨️
           
-          Novità e miglioramenti:
-          - **4 Foto per Striscia:** inserita la quarta foto nella doppia striscia 2x6 pollici.
-          - **Tratteggio pulito:** eliminato il simbolo delle forbici, mantenuta la linea di taglio tratteggiata.
-          - **Scelta modalità:** possibilità di selezionare sia dalla schermata iniziale che dalle impostazioni tra "Doppia Striscia (4 foto)" e "Foto Unica Intera 10x15 cm (1 foto)".
-          - **Tasto Home / Annulla durante lo scatto:** ora è possibile interrompere la sessione e tornare alla home in qualsiasi momento durante il countdown.
-          - **Rimossi riferimenti al PIN:** accesso immediato alle impostazioni senza schermata di blocco o PIN.
-          - **Pulsante Salva in alto:** inserito in alto nella barra del titolo delle impostazioni con chiusura automatica della tastiera.
-          - **Rimossi separatore/hashtag:** grafica della striscia pulita e lineare.
+          Nuove funzionalità e miglioramenti grafici:
+          - **Font Playfair Display:** titolo dell'evento reso più grande ed elegante con font Playfair Display sia a schermo che sulla stampa.
+          - **4 Foto con massimo spazio verticale:** le foto ora occupano oltre l'85% della striscia, con un footer compatto ed elegante.
+          - **Foto Unica Orizzontale (10x15):** stampa a tutto foglio orizzontale con cornice d'autore intorno.
+          - **Caricamento immagine di sfondo:** possibilità di caricare una propria immagine/grafica di sfondo dal tablet tramite il selettore nelle impostazioni.
+          - **Selettore in basso e nuovo colore:** selettore di formato spostato in fondo alla home con design dedicato e testo guida nascosto.
+          - **Timer predefinito a 5 secondi.**
+          - **Tasto 'Torna alla Home' nell'anteprima:** per annullare e resettare la postazione senza stampare.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

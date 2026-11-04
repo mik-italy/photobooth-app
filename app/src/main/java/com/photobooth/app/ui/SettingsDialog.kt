@@ -1,5 +1,9 @@
 package com.photobooth.app.ui
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,8 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoAlbum
@@ -51,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,6 +70,8 @@ import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
 import com.photobooth.app.printer.PrinterState
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 
 @Composable
 fun SettingsDialog(
@@ -71,6 +80,7 @@ fun SettingsDialog(
     onSave: (SettingsData) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // Settings fields
@@ -81,6 +91,7 @@ fun SettingsDialog(
     var layoutMode by remember { mutableStateOf(currentSettings.layoutMode) }
     var stripBgColor by remember { mutableStateOf(currentSettings.stripBackgroundColor) }
     var stripTextColor by remember { mutableStateOf(currentSettings.stripTextColor) }
+    var customBgPath by remember { mutableStateOf(currentSettings.customBgImagePath) }
     var countdownSec by remember { mutableStateOf(currentSettings.countdownSeconds.toString()) }
     var waitForPrinter by remember { mutableStateOf(currentSettings.waitForPrinterFinish) }
     var timeoutSec by remember { mutableStateOf(currentSettings.printTimeoutSeconds.toString()) }
@@ -90,6 +101,26 @@ fun SettingsDialog(
     var isTestingConnection by remember { mutableStateOf(false) }
     var testResultText by remember { mutableStateOf<String?>(null) }
     var testResultColor by remember { mutableStateOf(Color.Gray) }
+
+    // Image Picker for custom background
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val targetFile = File(context.filesDir, "custom_bg_${System.currentTimeMillis()}.png")
+                val outputStream = FileOutputStream(targetFile)
+                inputStream?.copyTo(outputStream)
+                inputStream?.close()
+                outputStream.close()
+                customBgPath = targetFile.absolutePath
+                Toast.makeText(context, "Immagine di sfondo caricata!", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Errore caricamento immagine: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     fun performSave() {
         keyboardController?.hide()
@@ -101,7 +132,8 @@ fun SettingsDialog(
             layoutMode = layoutMode,
             stripBackgroundColor = stripBgColor,
             stripTextColor = stripTextColor,
-            countdownSeconds = countdownSec.toIntOrNull() ?: 3,
+            customBgImagePath = customBgPath,
+            countdownSeconds = countdownSec.toIntOrNull() ?: 5,
             waitForPrinterFinish = waitForPrinter,
             printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 45
         )
@@ -124,7 +156,7 @@ fun SettingsDialog(
                     .padding(20.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // TOP HEADER: Title + SALVA BUTTON IN ALTO (richiesto esplicitamente per tastiera) + Chiudi
+                // TOP HEADER: Title + SALVA BUTTON IN ALTO + Chiudi
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -138,7 +170,6 @@ fun SettingsDialog(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // PULSANTE SALVA IN ALTO
                         Button(
                             onClick = { performSave() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
@@ -164,12 +195,12 @@ fun SettingsDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.15f))
 
-                // SECTION 1: Modalità Layout (Striscia 4 Foto vs Foto Unica)
+                // SECTION 1: Modalità Layout
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.PhotoAlbum, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "FORMATO DI STAMPA",
+                        text = "FORMATO DI STAMPA PREDEFINITO",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700)
@@ -193,7 +224,7 @@ fun SettingsDialog(
                     FilterChip(
                         selected = layoutMode == LayoutMode.SINGLE_PHOTO,
                         onClick = { layoutMode = LayoutMode.SINGLE_PHOTO },
-                        label = { Text("Foto Unica Intera 10x15 (1 Foto)", fontWeight = FontWeight.Medium) },
+                        label = { Text("Foto Unica Orizzontale 10x15 (1 Foto)", fontWeight = FontWeight.Medium) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFFE91E63),
                             selectedLabelColor = Color.White
@@ -203,12 +234,12 @@ fun SettingsDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
 
-                // SECTION 2: Grafica Personalizzata
+                // SECTION 2: Grafica Personalizzata & Sfondo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Palette, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "TESTI E COLORI GRAFICA",
+                        text = "TESTI, COLORI E SFONDO IMMAGINE",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700)
@@ -219,7 +250,7 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = eventTitle,
                     onValueChange = { eventTitle = it },
-                    label = { Text("Titolo Evento (es. MARCO & SARA)") },
+                    label = { Text("Titolo Evento (in font elegante Playfair Display)") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -246,8 +277,40 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Colore Sfondo Striscia
-                Text("Colore Sfondo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                // CARICAMENTO IMMAGINE DI SFONDO
+                Text("Immagine di Sfondo per la Stampa:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { imagePickerLauncher.launch("image/*") }
+                    ) {
+                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = Color(0xFFFFD700))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (customBgPath != null) "Cambia Immagine Sfondo" else "Carica Immagine Sfondo", color = Color.White)
+                    }
+
+                    if (customBgPath != null) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        IconButton(
+                            onClick = {
+                                customBgPath = null
+                                Toast.makeText(context, "Sfondo personalizzato rimosso", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Rimuovi", tint = Color(0xFFF44336))
+                        }
+                        Text("Immagine attiva", color = Color(0xFF4CAF50), fontSize = 12.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Colore Sfondo Predefinito
+                Text("Oppure scegli Colore Sfondo Tinta Unita:", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -260,7 +323,7 @@ fun SettingsDialog(
                         "#FCE4EC" to "Rosa"
                     )
                     bgOptions.forEach { (hex, label) ->
-                        val isSelected = stripBgColor.equals(hex, ignoreCase = true)
+                        val isSelected = stripBgColor.equals(hex, ignoreCase = true) && customBgPath == null
                         val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.White }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
@@ -414,7 +477,7 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = countdownSec,
                     onValueChange = { countdownSec = it },
-                    label = { Text("Secondi Countdown Scatto (3 o 5)") },
+                    label = { Text("Secondi Countdown Scatto (default 5)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(

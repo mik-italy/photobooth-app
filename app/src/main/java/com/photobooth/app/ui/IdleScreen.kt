@@ -41,10 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.photobooth.app.R
 import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.PrinterState
@@ -57,6 +59,14 @@ fun IdleScreen(
     onToggleLayoutMode: (LayoutMode) -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val playfairFont = remember {
+        try {
+            FontFamily(Font(R.font.playfair_display_bold, FontWeight.Bold))
+        } catch (_: Exception) {
+            FontFamily.Serif
+        }
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -74,9 +84,9 @@ fun IdleScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF141414),
-                        Color(0xFF1F1B24),
-                        Color(0xFF0F0F1A)
+                        Color(0xFF101014),
+                        Color(0xFF1A1822),
+                        Color(0xFF0C0C12)
                     )
                 )
             )
@@ -129,7 +139,7 @@ fun IdleScreen(
             }
         }
 
-        // Settings gear button (Opens directly, no PIN)
+        // Settings gear button (Direct access, no PIN)
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier
@@ -139,12 +149,12 @@ fun IdleScreen(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = Color.White.copy(alpha = 0.5f),
+                tint = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(32.dp)
             )
         }
 
-        // Center Content (Optimized for Landscape)
+        // Center Content (Title in Playfair Display - Large & Bold)
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -154,69 +164,33 @@ fun IdleScreen(
         ) {
             Text(
                 text = settings.eventTitle.uppercase(),
-                fontSize = 44.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = FontFamily.Serif,
-                letterSpacing = 4.sp,
+                fontSize = 58.sp, // Made bigger as requested
+                fontWeight = FontWeight.Bold,
+                fontFamily = playfairFont,
+                letterSpacing = 2.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = settings.eventSubtitle.uppercase(),
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Normal,
-                letterSpacing = 2.sp,
+                letterSpacing = 3.sp,
                 color = Color(0xFFFFD700)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Selector: Striscia o Foto Unica
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FilterChip(
-                    selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
-                    onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
-                    label = { Text("🎞️ Doppia Striscia (4 Foto)", fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFE91E63),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0x33FFFFFF),
-                        labelColor = Color.White.copy(alpha = 0.8f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.height(44.dp)
-                )
-
-                FilterChip(
-                    selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
-                    onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
-                    label = { Text("🖼️ Foto Unica Intera (1 Foto)", fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFE91E63),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0x33FFFFFF),
-                        labelColor = Color.White.copy(alpha = 0.8f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.height(44.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(36.dp))
-
-            // Main Pulsing Start Button
+            // Main Start Button
             Button(
                 onClick = onStartSession,
                 modifier = Modifier
                     .scale(pulseScale)
-                    .height(80.dp)
-                    .width(380.dp),
-                shape = RoundedCornerShape(40.dp),
+                    .height(84.dp)
+                    .width(400.dp),
+                shape = RoundedCornerShape(42.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE91E63)
                 ),
@@ -230,31 +204,61 @@ fun IdleScreen(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(34.dp)
                     )
                     Spacer(modifier = Modifier.width(14.dp))
                     Text(
                         text = "TOCCA PER INIZIARE",
-                        fontSize = 22.sp,
+                        fontSize = 23.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.5.sp,
                         color = Color.White
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(20.dp))
+        // BOTTOM SELECTOR (Doppia Striscia vs Foto Unica in basso, altro colore, senza testo helper)
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 28.dp),
+            shape = RoundedCornerShape(30.dp),
+            color = Color(0x661E1E2E)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
+                    onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
+                    label = { Text("🎞️ Doppia Striscia (4 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF3F51B5), // Distinct deep indigo/blue
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0x22FFFFFF),
+                        labelColor = Color.White.copy(alpha = 0.7f)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.height(42.dp)
+                )
 
-            val helperText = if (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS) {
-                "Verranno scattate 4 foto per comporre 2 strisce gemelle 5x15 cm"
-            } else {
-                "Verrà scattata 1 foto grande stampata a tutto foglio 10x15 cm"
+                FilterChip(
+                    selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
+                    onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
+                    label = { Text("🖼️ Foto Unica Orizzontale (1 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF3F51B5), // Distinct deep indigo/blue
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0x22FFFFFF),
+                        labelColor = Color.White.copy(alpha = 0.7f)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.height(42.dp)
+                )
             }
-            Text(
-                text = helperText,
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 14.sp
-            )
         }
     }
 }

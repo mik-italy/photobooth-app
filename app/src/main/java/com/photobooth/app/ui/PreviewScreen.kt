@@ -3,7 +3,6 @@ package com.photobooth.app.ui
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -37,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -54,9 +52,9 @@ fun PreviewScreen(
     printerState: PrinterState,
     onPrintClicked: () -> Unit,
     onRetakeClicked: () -> Unit,
+    onHomeClicked: () -> Unit,
     onTimeout: () -> Unit
 ) {
-    // 60-second inactivity timeout back to idle
     var remainingInactivitySeconds by remember { mutableIntStateOf(60) }
 
     LaunchedEffect(Unit) {
@@ -68,32 +66,33 @@ fun PreviewScreen(
     }
 
     val isPrinterBusy = printerState == PrinterState.PROCESSING
+    val bitmapAspectRatio = composedBitmap.width.toFloat() / composedBitmap.height.toFloat()
 
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF141416))
+            .background(Color(0xFF121216))
             .padding(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Column: Beautiful Photobooth Strip Preview
+        // Left Column: Sheet Preview (Adapts to portrait strip or landscape single photo)
         Box(
             modifier = Modifier
-                .weight(1.2f)
+                .weight(1.3f)
                 .fillMaxHeight(),
             contentAlignment = Alignment.Center
         ) {
             Surface(
                 modifier = Modifier
                     .fillMaxHeight(0.92f)
-                    .aspectRatio(1200f / 1800f)
+                    .aspectRatio(bitmapAspectRatio)
                     .shadow(16.dp, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
                 color = Color.White
             ) {
                 Image(
                     bitmap = composedBitmap.asImageBitmap(),
-                    contentDescription = "Doppia Striscia Photobooth",
+                    contentDescription = "Anteprima Stampa Photobooth",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -117,17 +116,15 @@ fun PreviewScreen(
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Verranno stampate 2 strisce gemelle su carta fotografica 10x15 cm.",
+                text = "Tocca 'Stampa' per inviare alla Canon SELPHY CP1500.",
                 fontSize = 15.sp,
-                color = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.padding(horizontal = 16.dp),
-                lineHeight = 22.sp
+                color = Color.White.copy(alpha = 0.7f)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Printer Busy Warning Banner if active
             if (isPrinterBusy) {
@@ -136,7 +133,7 @@ fun PreviewScreen(
                     color = Color(0x33FFC107),
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .padding(bottom = 20.dp)
+                        .padding(bottom = 16.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
@@ -157,12 +154,12 @@ fun PreviewScreen(
                 }
             }
 
-            // Print Button
+            // 1. Print Button
             Button(
                 onClick = onPrintClicked,
                 enabled = !isPrinterBusy,
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
+                    .fillMaxWidth(0.9f)
                     .height(68.dp),
                 shape = RoundedCornerShape(34.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -186,15 +183,15 @@ fun PreviewScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Retake Button
+            // 2. Retake Button
             OutlinedButton(
                 onClick = onRetakeClicked,
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
+                    .fillMaxWidth(0.9f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
                 )
@@ -203,18 +200,46 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Rifai gli scatti",
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 3. Return to Home Button (Richiesto esplicitamente)
+            OutlinedButton(
+                onClick = onHomeClicked,
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White.copy(alpha = 0.8f)
+                )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Torna alla Home",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "Ritorno automatico alla schermata iniziale tra ${remainingInactivitySeconds}s",

@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 
 enum class LayoutMode {
     STRIP_4_PHOTOS,   // Doppia striscia 2x6 (4 foto)
-    SINGLE_PHOTO      // Foto unica intera 10x15 cm (1 foto)
+    SINGLE_PHOTO      // Foto unica orizzontale 10x15 cm (1 foto)
 }
 
 data class SettingsData(
@@ -16,7 +16,8 @@ data class SettingsData(
     val layoutMode: LayoutMode = LayoutMode.STRIP_4_PHOTOS,
     val stripBackgroundColor: String = "#FFFFFF",
     val stripTextColor: String = "#181818",
-    val countdownSeconds: Int = 3,
+    val customBgImagePath: String? = null,
+    val countdownSeconds: Int = 5, // Default 5 seconds as requested
     val waitForPrinterFinish: Boolean = true,
     val printTimeoutSeconds: Int = 45,
     val useDirectIpp: Boolean = true
@@ -48,7 +49,8 @@ class AppSettings(context: Context) {
             layoutMode = mode,
             stripBackgroundColor = prefs.getString("strip_bg_color", "#FFFFFF") ?: "#FFFFFF",
             stripTextColor = prefs.getString("strip_text_color", "#181818") ?: "#181818",
-            countdownSeconds = prefs.getInt("countdown_seconds", 3),
+            customBgImagePath = prefs.getString("custom_bg_path", null),
+            countdownSeconds = prefs.getInt("countdown_seconds", 5),
             waitForPrinterFinish = prefs.getBoolean("wait_for_printer", true),
             printTimeoutSeconds = prefs.getInt("print_timeout", 45),
             useDirectIpp = prefs.getBoolean("use_direct_ipp", true)
@@ -64,6 +66,7 @@ class AppSettings(context: Context) {
             putString("layout_mode", settings.layoutMode.name)
             putString("strip_bg_color", settings.stripBackgroundColor)
             putString("strip_text_color", settings.stripTextColor)
+            putString("custom_bg_path", settings.customBgImagePath)
             putInt("countdown_seconds", settings.countdownSeconds)
             putBoolean("wait_for_printer", settings.waitForPrinterFinish)
             putInt("print_timeout", settings.printTimeoutSeconds)
