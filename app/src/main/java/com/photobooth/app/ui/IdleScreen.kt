@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.photobooth.app.R
+import com.photobooth.app.data.FontChoice
 import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.PrinterState
@@ -60,10 +61,14 @@ fun IdleScreen(
     onToggleLayoutMode: (LayoutMode) -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    // Playfair Display Bold Italic
-    val playfairBoldItalicFont = remember {
+    val titleFont = remember(settings.fontChoice) {
         try {
-            FontFamily(Font(R.font.playfair_display_bold_italic, FontWeight.Bold, FontStyle.Italic))
+            when (settings.fontChoice) {
+                FontChoice.PLAYFAIR -> FontFamily(Font(R.font.playfair_display_bold_italic, FontWeight.Bold, FontStyle.Italic))
+                FontChoice.MONTSERRAT -> FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
+                FontChoice.DANCING_SCRIPT -> FontFamily(Font(R.font.dancingscript_bold, FontWeight.Bold))
+                FontChoice.CINZEL -> FontFamily(Font(R.font.cinzel_bold, FontWeight.Bold))
+            }
         } catch (_: Exception) {
             FontFamily.Serif
         }
@@ -86,9 +91,9 @@ fun IdleScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF101014),
-                        Color(0xFF1A1822),
-                        Color(0xFF0C0C12)
+                        Color(0xFF0F0F14),
+                        Color(0xFF181622),
+                        Color(0xFF0A0A10)
                     )
                 )
             )
@@ -141,7 +146,7 @@ fun IdleScreen(
             }
         }
 
-        // Settings gear button (Direct access, no PIN)
+        // Settings button (Protetta da password 3552)
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier
@@ -152,11 +157,11 @@ fun IdleScreen(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
                 tint = Color.White.copy(alpha = 0.6f),
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(34.dp)
             )
         }
 
-        // Center Content (Title in Playfair Display Bold Italic - NOT UPPERCASE)
+        // Center Content (Titolo ancora più grande e pulsante ingrandito)
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -164,40 +169,32 @@ fun IdleScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = settings.eventTitle, // Non maiuscolo come richiesto
-                fontSize = 62.sp,
-                fontWeight = FontWeight.Bold,
-                fontStyle = FontStyle.Italic,
-                fontFamily = playfairBoldItalicFont,
-                letterSpacing = 1.sp,
-                color = Color.White
-            )
+            if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
+                Text(
+                    text = settings.eventTitle,
+                    fontSize = 72.sp, // ANCORA PIÙ GRANDE
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = titleFont,
+                    letterSpacing = 1.sp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(48.dp))
+            } else {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = settings.eventSubtitle,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 2.sp,
-                color = Color(0xFFFFD700)
-            )
-
-            Spacer(modifier = Modifier.height(44.dp))
-
-            // Main Start Button
+            // Main Start Button (ANCORA PIÙ GRANDE)
             Button(
                 onClick = onStartSession,
                 modifier = Modifier
                     .scale(pulseScale)
-                    .height(84.dp)
-                    .width(400.dp),
-                shape = RoundedCornerShape(42.dp),
+                    .height(96.dp) // Ingrandito
+                    .width(460.dp), // Ingrandito
+                shape = RoundedCornerShape(48.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE91E63)
                 ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 12.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 14.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -207,37 +204,37 @@ fun IdleScreen(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(40.dp)
                     )
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "TOCCA PER INIZIARE",
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp,
+                        fontSize = 28.sp, // Testo ingrandito
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp,
                         color = Color.White
                     )
                 }
             }
         }
 
-        // BOTTOM SELECTOR (Doppia Striscia vs Foto Unica in basso, colore blu indaco, nessun testo helper)
+        // BOTTOM SELECTOR: "4 FOTO" e "1 FOTO" (Senza emoji)
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 28.dp),
+                .padding(bottom = 30.dp),
             shape = RoundedCornerShape(30.dp),
             color = Color(0x661E1E2E)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChip(
                     selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
                     onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
-                    label = { Text("🎞️ Doppia Striscia (4 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
+                    label = { Text("4 FOTO", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color(0xFF3F51B5),
                         selectedLabelColor = Color.White,
@@ -245,13 +242,13 @@ fun IdleScreen(
                         labelColor = Color.White.copy(alpha = 0.7f)
                     ),
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.height(42.dp)
+                    modifier = Modifier.height(44.dp)
                 )
 
                 FilterChip(
                     selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
                     onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
-                    label = { Text("🖼️ Foto Unica Orizzontale (1 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
+                    label = { Text("1 FOTO", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color(0xFF3F51B5),
                         selectedLabelColor = Color.White,
@@ -259,7 +256,7 @@ fun IdleScreen(
                         labelColor = Color.White.copy(alpha = 0.7f)
                     ),
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.height(42.dp)
+                    modifier = Modifier.height(44.dp)
                 )
             }
         }

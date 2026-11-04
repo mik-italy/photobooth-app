@@ -13,7 +13,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
-import java.io.InputStream
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
@@ -65,9 +64,6 @@ class CanonSelphyPrinter(private val context: Context) {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Checks if the printer is currently idle, processing a job, or stopped (error).
-     */
     suspend fun getPrinterStatus(ip: String, port: Int = 631): PrinterStatusResult =
         withContext(Dispatchers.IO) {
             try {
@@ -94,25 +90,25 @@ class CanonSelphyPrinter(private val context: Context) {
                 val status = parsePrinterAttributesResponse(responseBytes)
                 return@withContext status
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to get printer status from $ip:$port", e)
                 return@withContext PrinterStatusResult(
                     PrinterState.OFFLINE,
-                    "Offline o non raggiungibile (${e.localizedMessage ?: "timeout"})"
+                    "Offline (${e.localizedMessage ?: "timeout"})"
                 )
             }
         }
 
     /**
-     * Sends a direct IPP print job to the Canon SELPHY printer.
+     * Sends a direct IPP print job with configurable number of copies.
      */
     suspend fun printDirect(
         ip: String,
         port: Int = 631,
         jpegBytes: ByteArray,
-        jobName: String = "Photobooth Double Strip"
+        copies: Int = 1,
+        jobName: String = "Photobooth Print"
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val ippHeaderAndAttrs = buildPrintJobRequest(ip, port, jobName)
+            val ippHeaderAndAttrs = buildPrintJobRequest(ip, port, jobName, copies)
             val fullPayload = ByteArray(ippHeaderAndAttrs.size + jpegBytes.size)
             System.arraycopy(ippHeaderAndAttrs, 0, fullPayload, 0, ippHeaderAndAttrs.size)
             System.arraycopy(jpegBytes, 0, fullPayload, ippHeaderAndAttrs.size, jpegBytes.size)
@@ -134,25 +130,21 @@ class CanonSelphyPrinter(private val context: Context) {
             val bodyBytes = response.body?.bytes() ?: byteArrayOf()
             if (bodyBytes.size >= 4) {
                 val statusCode = ByteBuffer.wrap(bodyBytes, 2, 2).short
-                if (statusCode != STATUS_OK && statusCode.toInt() != 0x0001) { // 0x0001 is ok-attribute-or-value-substituted
+                if (statusCode != STATUS_OK && statusCode.toInt() != 0x0001) {
                     return@withContext Result.failure(
                         Exception("Errore IPP stampante: 0x${Integer.toHexString(statusCode.toInt())}")
                     )
                 }
             }
 
-            Log.i(TAG, "Stampa inviata con successo alla Canon SELPHY CP1500 ($ip:$port)")
-            return@withContext Result.success("Stampa inviata con successo!")
+            Log.i(TAG, "Stampa inviata con successo alla Canon SELPHY CP1500 ($copies copie)")
+            return@withContext Result.success("Stampa inviata ($copies copie)!")
         } catch (e: Exception) {
             Log.e(TAG, "Errore durante l'invio della stampa", e)
             return@withContext Result.failure(e)
         }
     }
 
-    /**
-     * Polls the printer status until it returns to IDLE or timeout is reached.
-     * Crucial to avoid overlapping prints on the Canon SELPHY CP1500!
-     */
     suspend fun waitForPrintCompletion(
         ip: String,
         port: Int = 631,
@@ -172,8 +164,7 @@ class CanonSelphyPrinter(private val context: Context) {
                     onProgressUpdate(remaining, "La Canon SELPHY sta stampando...")
                 }
                 PrinterState.IDLE -> {
-                    // If we saw it processing and now it is idle, it is done!
-                    if (hasSeenProcessing || elapsed >= 30) {
+                    if (hasSeenProcessing || elapsed >= (maxWaitSeconds / 2)) {
                         onProgressUpdate(0, "Stampa completata!")
                         return@withContext true
                     } else {
@@ -184,7 +175,6 @@ class CanonSelphyPrinter(private val context: Context) {
                     onProgressUpdate(remaining, "Attenzione: stampante in pausa o carta/inchiostro esauriti!")
                 }
                 PrinterState.OFFLINE, PrinterState.UNKNOWN -> {
-                    // Fallback to countdown if IPP polling fails
                     onProgressUpdate(remaining, "Stampa in corso... (${remaining}s)")
                 }
             }
@@ -193,13 +183,9 @@ class CanonSelphyPrinter(private val context: Context) {
             elapsed += 2
         }
 
-        // Timeout reached, assume print finished
         return@withContext true
     }
 
-    /**
-     * Fallback standard Android Print Service dialog
-     */
     fun printViaAndroidPrintManager(bitmap: Bitmap, jobName: String = "Photobooth Print") {
         val printHelper = PrintHelper(context).apply {
             scaleMode = PrintHelper.SCALE_MODE_FIT
@@ -214,35 +200,26 @@ class CanonSelphyPrinter(private val context: Context) {
         val baos = ByteArrayOutputStream()
         val dos = DataOutputStream(baos)
 
-        // Version: IPP 2.0 (0x0200)
-        dos.writeShort(0x0200)
-        // Operation: Get-Printer-Attributes (0x000B)
+        dos.writeShort(0x0200) // IPP 2.0
         dos.writeShort(OP_GET_PRINTER_ATTRIBUTES.toInt())
-        // Request ID: 1
         dos.writeInt(1)
 
-        // Operation attributes group tag
         dos.writeByte(TAG_OPERATION_ATTRIBUTES.toInt())
-
         writeAttribute(dos, TAG_CHARSET, "attributes-charset", "utf-8")
         writeAttribute(dos, TAG_NATURAL_LANGUAGE, "attributes-natural-language", "en")
         writeAttribute(dos, TAG_URI, "printer-uri", "ipp://$ip:$port/ipp/print")
 
-        // End of attributes
         dos.writeByte(TAG_END_OF_ATTRIBUTES.toInt())
         dos.flush()
         return baos.toByteArray()
     }
 
-    private fun buildPrintJobRequest(ip: String, port: Int, jobName: String): ByteArray {
+    private fun buildPrintJobRequest(ip: String, port: Int, jobName: String, copies: Int = 1): ByteArray {
         val baos = ByteArrayOutputStream()
         val dos = DataOutputStream(baos)
 
-        // Version: IPP 2.0 (0x0200)
         dos.writeShort(0x0200)
-        // Operation: Print-Job (0x0002)
         dos.writeShort(OP_PRINT_JOB.toInt())
-        // Request ID: 2
         dos.writeInt(2)
 
         // Operation attributes
@@ -256,8 +233,9 @@ class CanonSelphyPrinter(private val context: Context) {
 
         // Job attributes
         dos.writeByte(TAG_JOB_ATTRIBUTES.toInt())
-        // Canon SELPHY 4x6 / Postcard media name in IPP
         writeAttribute(dos, TAG_KEYWORD, "media", "na_index-4x6_4x6in")
+        // Copies attribute
+        writeIntegerAttribute(dos, "copies", copies.coerceAtLeast(1))
 
         // End of attributes
         dos.writeByte(TAG_END_OF_ATTRIBUTES.toInt())
@@ -273,6 +251,15 @@ class CanonSelphyPrinter(private val context: Context) {
         val valueBytes = value.toByteArray(Charsets.UTF_8)
         dos.writeShort(valueBytes.size)
         dos.write(valueBytes)
+    }
+
+    private fun writeIntegerAttribute(dos: DataOutputStream, name: String, value: Int) {
+        dos.writeByte(TAG_INTEGER.toInt())
+        val nameBytes = name.toByteArray(Charsets.UTF_8)
+        dos.writeShort(nameBytes.size)
+        dos.write(nameBytes)
+        dos.writeShort(4)
+        dos.writeInt(value)
     }
 
     private fun parsePrinterAttributesResponse(bytes: ByteArray): PrinterStatusResult {
@@ -291,12 +278,8 @@ class CanonSelphyPrinter(private val context: Context) {
             while (buffer.hasRemaining()) {
                 val tag = buffer.get()
                 if (tag == TAG_END_OF_ATTRIBUTES) break
-                if (tag.toInt() in 0x01..0x0F) {
-                    // Group delimiter tag
-                    continue
-                }
+                if (tag.toInt() in 0x01..0x0F) continue
 
-                // Attribute
                 if (buffer.remaining() < 2) break
                 val nameLen = buffer.short.toInt()
                 val name = if (nameLen > 0 && buffer.remaining() >= nameLen) {
@@ -328,14 +311,13 @@ class CanonSelphyPrinter(private val context: Context) {
             val desc = when (printerState) {
                 PrinterState.IDLE -> "Pronta per stampare"
                 PrinterState.PROCESSING -> "Stampa in corso..."
-                PrinterState.STOPPED -> "Bloccata (Controllare carta o nastro: $stateReason)"
+                PrinterState.STOPPED -> "Bloccata ($stateReason)"
                 PrinterState.OFFLINE -> "Non in linea"
-                PrinterState.UNKNOWN -> "Stato stampante sconosciuto"
+                PrinterState.UNKNOWN -> "In attesa"
             }
             return PrinterStatusResult(printerState, desc)
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing IPP response", e)
-            return PrinterStatusResult(PrinterState.UNKNOWN, "Errore analisi risposta: ${e.message}")
+            return PrinterStatusResult(PrinterState.UNKNOWN, "Errore: ${e.message}")
         }
     }
 }

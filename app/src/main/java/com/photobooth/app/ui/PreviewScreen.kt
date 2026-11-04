@@ -16,15 +16,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,12 +55,13 @@ import kotlinx.coroutines.delay
 fun PreviewScreen(
     composedBitmap: Bitmap,
     printerState: PrinterState,
-    onPrintClicked: () -> Unit,
+    onPrintClicked: (copies: Int) -> Unit,
     onRetakeClicked: () -> Unit,
     onHomeClicked: () -> Unit,
     onTimeout: () -> Unit
 ) {
     var remainingInactivitySeconds by remember { mutableIntStateOf(60) }
+    var copiesCount by remember { mutableIntStateOf(1) } // Scelta numero copie
 
     LaunchedEffect(Unit) {
         while (remainingInactivitySeconds > 0) {
@@ -75,7 +81,7 @@ fun PreviewScreen(
             .padding(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Column: Sheet Preview (Adapts to portrait strip or landscape single photo)
+        // Left Column: Sheet Preview
         Box(
             modifier = Modifier
                 .weight(1.3f)
@@ -101,7 +107,7 @@ fun PreviewScreen(
 
         Spacer(modifier = Modifier.width(32.dp))
 
-        // Right Column: Controls & Actions
+        // Right Column: Controls, Copies selector & Actions
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -116,15 +122,65 @@ fun PreviewScreen(
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Tocca 'Stampa' per inviare alla Canon SELPHY CP1500.",
-                fontSize = 15.sp,
+                text = "Scegli quante copie stampare con la Canon SELPHY.",
+                fontSize = 14.sp,
                 color = Color.White.copy(alpha = 0.7f)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // SELETTORE NUMERO COPIE DA STAMPARE
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color(0x33FFFFFF),
+                modifier = Modifier.padding(bottom = 18.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Copie da stampare:",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    FilledIconButton(
+                        onClick = { if (copiesCount > 1) copiesCount-- },
+                        enabled = copiesCount > 1,
+                        modifier = Modifier.size(38.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFF3F51B5))
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Meno copie", tint = Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Text(
+                        text = "$copiesCount",
+                        color = Color(0xFFFFD700),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    FilledIconButton(
+                        onClick = { if (copiesCount < 6) copiesCount++ },
+                        enabled = copiesCount < 6,
+                        modifier = Modifier.size(38.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFF3F51B5))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Più copie", tint = Color.White)
+                    }
+                }
+            }
 
             // Printer Busy Warning Banner if active
             if (isPrinterBusy) {
@@ -133,20 +189,20 @@ fun PreviewScreen(
                     color = Color(0x33FFC107),
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .padding(bottom = 16.dp)
+                        .padding(bottom = 14.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(20.dp),
                             color = Color(0xFFFFC107),
                             strokeWidth = 3.dp
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "La stampante sta ultimando il lavoro precedente. Attendere...",
+                            text = "Stampante occupata. Attendere...",
                             color = Color(0xFFFFE082),
                             fontSize = 13.sp
                         )
@@ -154,9 +210,9 @@ fun PreviewScreen(
                 }
             }
 
-            // 1. Print Button
+            // Print Button (Displays copies number dynamically)
             Button(
-                onClick = onPrintClicked,
+                onClick = { onPrintClicked(copiesCount) },
                 enabled = !isPrinterBusy,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
@@ -176,22 +232,22 @@ fun PreviewScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = if (isPrinterBusy) "STAMPANTE OCCUPATA..." else "STAMPA LE FOTO",
+                        text = if (isPrinterBusy) "STAMPANTE OCCUPATA..." else "STAMPA $copiesCount ${if (copiesCount == 1) "COPIA" else "COPIE"}",
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Retake Button
+            // Retake Button
             OutlinedButton(
                 onClick = onRetakeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
                 )
@@ -200,26 +256,26 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Rifai gli scatti",
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 3. Return to Home Button (Richiesto esplicitamente)
+            // Return to Home Button
             OutlinedButton(
                 onClick = onHomeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White.copy(alpha = 0.8f)
                 )
@@ -228,18 +284,18 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Home,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Torna alla Home",
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Normal
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = "Ritorno automatico alla schermata iniziale tra ${remainingInactivitySeconds}s",

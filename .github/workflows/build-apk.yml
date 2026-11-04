@@ -38,17 +38,19 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.4
-        name: "Photobooth App v1.0.4 - Playfair Bold Italic, Custom BG Scaling & Contrast"
+        tag_name: v1.0.5
+        name: "Photobooth App v1.0.5 - Warm Flash, Multi-Copies, Custom Fonts & Dual BG"
         body: |
-          ### Photobooth Android v1.0.4 📸🖨️
+          ### Photobooth Android v1.0.5 📸🖨️
           
           Nuovi aggiornamenti:
-          - **Font Playfair Display Bold Italic:** titolo formattato in Playfair Display Bold Italic rispettando esattamente le maiuscole/minuscole inserite (non forzato in maiuscolo).
-          - **Proporzioni e Adattamento Immagine di Sfondo:** scelta tra Ritaglio Centrato (Center Crop), Riempi (Fit XY) e Mantieni Proporzioni (Fit Center).
-          - **Contrasto e Personalizzazione Testo:** scelta colore testo, dimensione font e ombra/halo di contrasto automatica per garantire perfetta leggibilità su qualunque sfondo.
-          - **Scritta 'SORRIDI! 📸' Nera durante il flash:** chiaramente visibile in nero al centro dello schermo mentre è attivo il flash bianco a massima luminosità.
-          - **Rimossa scritta Photobooth:** eliminate le diciture "photobooth" in calce alla stampa per un layout 100% pulito e personalizzato.
+          - **Flash Bianco Caldo:** luce flash a schermo calda (tono caldo naturale) con scritta 'SORRIDI! 📸' in nero.
+          - **Scelta numero di copie:** selettore (1, 2, 3...) nell'anteprima prima della stampa con gestione coda adeguata.
+          - **Sfondi separati (4 FOTO e 1 FOTO):** caricamento indipendente con riempimento automatico.
+          - **Scelta font e opzione nascondi testo:** Playfair, Montserrat, Dancing Script, Cinzel e switch per nascondere il testo.
+          - **Titolo e pulsante 'TOCCA PER INIZIARE' ancora più grandi.**
+          - **Nuova password impostazioni: 3552.**
+          - **Scelta 4 FOTO e 1 FOTO senza emoji.**
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

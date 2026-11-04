@@ -12,7 +12,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import androidx.core.content.res.ResourcesCompat
 import com.photobooth.app.R
-import com.photobooth.app.data.BgScaleMode
+import com.photobooth.app.data.FontChoice
 import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import java.io.ByteArrayOutputStream
@@ -20,7 +20,6 @@ import java.io.File
 
 object PhotoStripComposer {
 
-    // Canon SELPHY CP1500 postcard size (4x6 inches at 300 DPI)
     const val SHEET_WIDTH_PORTRAIT = 1200
     const val SHEET_HEIGHT_PORTRAIT = 1800
     const val STRIP_WIDTH = SHEET_WIDTH_PORTRAIT / 2 // 600 px each
@@ -33,27 +32,33 @@ object PhotoStripComposer {
         photos: List<Bitmap>,
         settings: SettingsData
     ): Bitmap {
-        // Playfair Display Bold Italic
-        val playfairBoldItalicTypeface = try {
-            ResourcesCompat.getFont(context, R.font.playfair_display_bold_italic)
-                ?: Typeface.create(Typeface.SERIF, Typeface.BOLD_ITALIC)
-        } catch (_: Exception) {
-            Typeface.create(Typeface.SERIF, Typeface.BOLD_ITALIC)
-        }
+        val selectedTypeface = loadTypeface(context, settings.fontChoice)
 
         return when (settings.layoutMode) {
-            LayoutMode.STRIP_4_PHOTOS -> createDoubleStrip4Photos(photos, settings, playfairBoldItalicTypeface)
-            LayoutMode.SINGLE_PHOTO -> createSingleHorizontalPhoto(photos.firstOrNull(), settings, playfairBoldItalicTypeface)
+            LayoutMode.STRIP_4_PHOTOS -> createDoubleStrip4Photos(photos, settings, selectedTypeface)
+            LayoutMode.SINGLE_PHOTO -> createSingleHorizontalPhoto(photos.firstOrNull(), settings, selectedTypeface)
+        }
+    }
+
+    private fun loadTypeface(context: Context, choice: FontChoice): Typeface {
+        return try {
+            val fontRes = when (choice) {
+                FontChoice.PLAYFAIR -> R.font.playfair_display_bold_italic
+                FontChoice.MONTSERRAT -> R.font.montserrat_bold
+                FontChoice.DANCING_SCRIPT -> R.font.dancingscript_bold
+                FontChoice.CINZEL -> R.font.cinzel_bold
+            }
+            ResourcesCompat.getFont(context, fontRes) ?: Typeface.create(Typeface.SERIF, Typeface.BOLD)
+        } catch (_: Exception) {
+            Typeface.create(Typeface.SERIF, Typeface.BOLD)
         }
     }
 
     /**
      * 4-Photo Double Strip:
-     * - Maximizes vertical space for photos (4 photos of 370px each = 1480px)
-     * - Compact footer for title and date
-     * - Title in Playfair Display Bold Italic (NOT uppercase) with contrasting shadow
-     * - Configurable scaling for background image
-     * - NO watermark / NO "PHOTOBOOTH" text
+     * - Uses stripBgImagePath if present
+     * - Maximizes vertical space for photos (370px each = 1480px total)
+     * - Draws eventTitle only if showTitleText is true (NO subtitle)
      */
     private fun createDoubleStrip4Photos(
         photos: List<Bitmap>,
@@ -63,7 +68,7 @@ object PhotoStripComposer {
         val sheetBitmap = Bitmap.createBitmap(SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(sheetBitmap)
 
-        drawBackground(canvas, SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, settings)
+        drawBackground(canvas, SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, settings.stripBgImagePath, settings.stripBackgroundColor)
 
         // Draw Left Strip
         drawStrip4Photos(canvas, photos, settings, titleTypeface, offsetX = 0f)
@@ -99,11 +104,11 @@ object PhotoStripComposer {
     ) {
         val photoMarginX = 38f
         val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 524 px
-        val photoHeight = 368f // Maximized vertical space
+        val photoHeight = 368f
         val topMargin = 26f
         val spacing = 12f
 
-        val isDark = isDarkBackground(settings)
+        val isDark = isDarkBackground(settings.stripBackgroundColor)
 
         val primaryTextColor = try {
             Color.parseColor(settings.stripTextColor)
@@ -111,7 +116,6 @@ object PhotoStripComposer {
             if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
         }
 
-        val secondaryTextColor = if (isDark) Color.rgb(215, 215, 215) else Color.rgb(110, 110, 110)
         val borderColor = if (isDark) Color.rgb(70, 70, 70) else Color.rgb(225, 225, 225)
 
         val borderPaint = Paint().apply {
@@ -144,46 +148,29 @@ object PhotoStripComposer {
             canvas.drawRect(photoRect, borderPaint)
         }
 
-        // Compact Footer Area
-        val footerTop = topMargin + (4 * (photoHeight + spacing)) + 12f
-        val footerCenterX = offsetX + (STRIP_WIDTH / 2f)
+        // Footer Area: Event Title only (if enabled)
+        if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
+            val footerTop = topMargin + (4 * (photoHeight + spacing)) + 12f
+            val footerCenterX = offsetX + (STRIP_WIDTH / 2f)
 
-        // Event Title (Playfair Display Bold Italic - NOT UPPERCASE, with contrast shadow)
-        val titlePaint = Paint().apply {
-            color = primaryTextColor
-            textSize = settings.titleFontSize.toFloat()
-            typeface = titleTypeface
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            // High-contrast shadow layer so text is readable over any photo background
-            val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
-            setShadowLayer(6f, 1f, 1f, shadowColor)
+            val titlePaint = Paint().apply {
+                color = primaryTextColor
+                textSize = settings.titleFontSize.toFloat()
+                typeface = titleTypeface
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
+                setShadowLayer(6f, 1f, 1f, shadowColor)
+            }
+            canvas.drawText(settings.eventTitle, footerCenterX, footerTop + 65f, titlePaint)
         }
-        // User requested: NOT uppercase!
-        canvas.drawText(settings.eventTitle, footerCenterX, footerTop + 54f, titlePaint)
-
-        // Event Subtitle / Date (NOT uppercase, with contrast shadow)
-        val subtitlePaint = Paint().apply {
-            color = secondaryTextColor
-            textSize = (settings.titleFontSize * 0.58f).coerceAtLeast(22f)
-            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            letterSpacing = 0.04f
-            val shadowColor = if (isDarkColor(secondaryTextColor)) Color.argb(140, 255, 255, 255) else Color.argb(180, 0, 0, 0)
-            setShadowLayer(4f, 1f, 1f, shadowColor)
-        }
-        canvas.drawText(settings.eventSubtitle, footerCenterX, footerTop + 112f, subtitlePaint)
-
-        // NOTE: "PHOTOBOOTH" text has been removed as requested!
     }
 
     /**
      * Single Horizontal Photo (10x15 cm Landscape / 1800 x 1200 px)
-     * - Horizontal photo orientation
-     * - Cornice intorno (framed border)
-     * - Title in Playfair Display Bold Italic (NOT uppercase)
-     * - NO watermark
+     * - Uses singlePhotoBgImagePath if present
+     * - Horizontal photo with elegant framed border
+     * - Draws eventTitle only if showTitleText is true (NO subtitle)
      */
     private fun createSingleHorizontalPhoto(
         photo: Bitmap?,
@@ -193,15 +180,14 @@ object PhotoStripComposer {
         val sheetBitmap = Bitmap.createBitmap(SHEET_WIDTH_LANDSCAPE, SHEET_HEIGHT_LANDSCAPE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(sheetBitmap)
 
-        drawBackground(canvas, SHEET_WIDTH_LANDSCAPE, SHEET_HEIGHT_LANDSCAPE, settings)
+        drawBackground(canvas, SHEET_WIDTH_LANDSCAPE, SHEET_HEIGHT_LANDSCAPE, settings.singlePhotoBgImagePath, settings.stripBackgroundColor)
 
-        val isDark = isDarkBackground(settings)
+        val isDark = isDarkBackground(settings.stripBackgroundColor)
 
-        // Frame dimensions for horizontal 10x15
         val outerMarginX = 70f
         val outerMarginTop = 50f
         val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 1660 px
-        val photoHeight = 920f // Horizontal photo
+        val photoHeight = 920f
 
         val photoRect = RectF(
             outerMarginX,
@@ -210,7 +196,7 @@ object PhotoStripComposer {
             outerMarginTop + photoHeight
         )
 
-        // 1. Draw outer mat border / frame (Cornice intorno)
+        // Mat border / frame around photo
         val matPaint = Paint().apply {
             color = if (isDark) Color.rgb(35, 35, 35) else Color.WHITE
             style = Paint.Style.FILL
@@ -224,7 +210,7 @@ object PhotoStripComposer {
         )
         canvas.drawRect(matRect, matPaint)
 
-        // 2. Draw outer frame outline
+        // Frame outline
         val outerFramePaint = Paint().apply {
             color = if (isDark) Color.rgb(80, 80, 80) else Color.rgb(200, 200, 200)
             style = Paint.Style.STROKE
@@ -233,7 +219,6 @@ object PhotoStripComposer {
         }
         canvas.drawRect(matRect, outerFramePaint)
 
-        // 3. Draw inner photo
         if (photo != null) {
             drawCenterCropBitmap(canvas, photo, photoRect)
         } else {
@@ -243,7 +228,6 @@ object PhotoStripComposer {
             canvas.drawRect(photoRect, placeholderPaint)
         }
 
-        // 4. Inner photo border
         val innerBorderPaint = Paint().apply {
             color = if (isDark) Color.rgb(70, 70, 70) else Color.rgb(220, 220, 220)
             style = Paint.Style.STROKE
@@ -252,83 +236,41 @@ object PhotoStripComposer {
         }
         canvas.drawRect(photoRect, innerBorderPaint)
 
-        // Footer Area in bottom of horizontal sheet
-        val footerTop = outerMarginTop + photoHeight + 25f
-        val centerX = SHEET_WIDTH_LANDSCAPE / 2f
+        // Footer Area
+        if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
+            val footerTop = outerMarginTop + photoHeight + 30f
+            val centerX = SHEET_WIDTH_LANDSCAPE / 2f
 
-        val primaryTextColor = try {
-            Color.parseColor(settings.stripTextColor)
-        } catch (_: Exception) {
-            if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
-        }
-        val secondaryTextColor = if (isDark) Color.rgb(215, 215, 215) else Color.rgb(115, 115, 115)
+            val primaryTextColor = try {
+                Color.parseColor(settings.stripTextColor)
+            } catch (_: Exception) {
+                if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
+            }
 
-        // Event Title (Playfair Display Bold Italic - NOT UPPERCASE, with contrast shadow)
-        val titlePaint = Paint().apply {
-            color = primaryTextColor
-            textSize = (settings.titleFontSize * 1.3f).coerceAtLeast(50f)
-            typeface = titleTypeface
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
-            setShadowLayer(8f, 2f, 2f, shadowColor)
+            val titlePaint = Paint().apply {
+                color = primaryTextColor
+                textSize = (settings.titleFontSize * 1.35f).coerceAtLeast(52f)
+                typeface = titleTypeface
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
+                setShadowLayer(8f, 2f, 2f, shadowColor)
+            }
+            canvas.drawText(settings.eventTitle, centerX, footerTop + 70f, titlePaint)
         }
-        canvas.drawText(settings.eventTitle, centerX, footerTop + 62f, titlePaint)
-
-        // Event Subtitle / Date (with contrast shadow)
-        val subtitlePaint = Paint().apply {
-            color = secondaryTextColor
-            textSize = (settings.titleFontSize * 0.68f).coerceAtLeast(28f)
-            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-            letterSpacing = 0.04f
-            val shadowColor = if (isDarkColor(secondaryTextColor)) Color.argb(140, 255, 255, 255) else Color.argb(180, 0, 0, 0)
-            setShadowLayer(5f, 1f, 1f, shadowColor)
-        }
-        canvas.drawText(settings.eventSubtitle, centerX, footerTop + 120f, subtitlePaint)
 
         return sheetBitmap
     }
 
-    /**
-     * Draws background with chosen scaling mode:
-     * - CENTER_CROP: Fills whole sheet without distortion (crops overflow)
-     * - FIT_XY: Stretches to exact width and height
-     * - FIT_CENTER: Scales to fit while preserving proportions
-     */
-    private fun drawBackground(canvas: Canvas, width: Int, height: Int, settings: SettingsData) {
+    private fun drawBackground(canvas: Canvas, width: Int, height: Int, imagePath: String?, defaultColorHex: String) {
         var drewCustomImage = false
-        if (!settings.customBgImagePath.isNullOrEmpty()) {
-            val bgFile = File(settings.customBgImagePath)
+        if (!imagePath.isNullOrEmpty()) {
+            val bgFile = File(imagePath)
             if (bgFile.exists()) {
                 try {
                     val customBg = BitmapFactory.decodeFile(bgFile.absolutePath)
                     if (customBg != null) {
-                        val paint = Paint(Paint.FILTER_BITMAP_FLAG)
-                        when (settings.bgScaleMode) {
-                            BgScaleMode.FIT_XY -> {
-                                val destRect = Rect(0, 0, width, height)
-                                canvas.drawBitmap(customBg, null, destRect, paint)
-                            }
-                            BgScaleMode.CENTER_CROP -> {
-                                drawCenterCropBitmap(canvas, customBg, RectF(0f, 0f, width.toFloat(), height.toFloat()))
-                            }
-                            BgScaleMode.FIT_CENTER -> {
-                                val srcW = customBg.width
-                                val srcH = customBg.height
-                                val scale = Math.min(width.toFloat() / srcW, height.toFloat() / srcH)
-                                val destW = srcW * scale
-                                val destH = srcH * scale
-                                val left = (width - destW) / 2f
-                                val top = (height - destH) / 2f
-                                val destRect = RectF(left, top, left + destW, top + destH)
-                                // Fill base color first
-                                val baseColor = try { Color.parseColor(settings.stripBackgroundColor) } catch (_: Exception) { Color.WHITE }
-                                canvas.drawColor(baseColor)
-                                canvas.drawBitmap(customBg, null, destRect, paint)
-                            }
-                        }
+                        drawCenterCropBitmap(canvas, customBg, RectF(0f, 0f, width.toFloat(), height.toFloat()))
                         drewCustomImage = true
                     }
                 } catch (_: Exception) {}
@@ -337,7 +279,7 @@ object PhotoStripComposer {
 
         if (!drewCustomImage) {
             val bgColor = try {
-                Color.parseColor(settings.stripBackgroundColor)
+                Color.parseColor(defaultColorHex)
             } catch (_: Exception) {
                 Color.WHITE
             }
@@ -345,9 +287,9 @@ object PhotoStripComposer {
         }
     }
 
-    private fun isDarkBackground(settings: SettingsData): Boolean {
+    private fun isDarkBackground(colorHex: String): Boolean {
         return try {
-            val color = Color.parseColor(settings.stripBackgroundColor)
+            val color = Color.parseColor(colorHex)
             isDarkColor(color)
         } catch (_: Exception) {
             false

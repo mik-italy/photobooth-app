@@ -19,11 +19,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -88,11 +86,11 @@ fun CameraCaptureScreen(
             countdownValue--
         }
 
-        // 1. ACTIVATE SCREEN FLASH AT MAX BRIGHTNESS
+        // 1. ACTIVATE WARM WHITE SCREEN FLASH AT 100% BRIGHTNESS
         onSetFlashBrightness(true)
         isWhiteFlashActive = true
 
-        // 2. Allow 300ms for illumination and auto-exposure
+        // 2. Allow 300ms for illumination and exposure
         delay(300)
         if (isCancelled) {
             onSetFlashBrightness(false)
@@ -274,7 +272,7 @@ fun CameraCaptureScreen(
             }
         }
 
-        // Countdown Display (When > 0)
+        // Countdown Display
         val countdownScale by animateFloatAsState(
             targetValue = if (countdownValue > 0) 1.25f else 0.85f,
             animationSpec = tween(400),
@@ -304,7 +302,8 @@ fun CameraCaptureScreen(
             }
         }
 
-        // INTERNAL WHITE FLASH WITH BLACK "SORRIDI! 📸" TEXT
+        // WARM WHITE SCREEN FLASH (Colore bianco caldo tipo 3200K per toni pelle ottimali)
+        // con SCRITTA "SORRIDI! 📸" IN NERO
         AnimatedVisibility(
             visible = isWhiteFlashActive,
             enter = fadeIn(animationSpec = tween(25)),
@@ -313,12 +312,12 @@ fun CameraCaptureScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White),
+                    .background(Color(0xFFFFF4E2)), // BIANCO CALDO
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "SORRIDI! 📸",
-                    color = Color.Black, // Scritta nera su fondo bianco flash
+                    color = Color.Black, // Scritta nera
                     fontSize = 58.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp

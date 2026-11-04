@@ -153,14 +153,15 @@ fun MainPhotoboothScreen(
                 PreviewScreen(
                     composedBitmap = state.composedBitmap,
                     printerState = printerState,
-                    onPrintClicked = {
+                    onPrintClicked = { copiesCount ->
                         val bitmapToPrint = state.composedBitmap
                         val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
+                        val totalWait = settings.printTimeoutSeconds * copiesCount
 
                         if (settings.waitForPrinterFinish) {
                             screenState = PhotoboothScreenState.Printing(
-                                remainingSeconds = settings.printTimeoutSeconds,
-                                statusMessage = "Invio lavoro alla Canon SELPHY CP1500...",
+                                remainingSeconds = totalWait,
+                                statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
                                 isCompleted = false
                             )
 
@@ -169,6 +170,7 @@ fun MainPhotoboothScreen(
                                     ip = settings.printerIp,
                                     port = settings.printerPort,
                                     jpegBytes = jpegBytes,
+                                    copies = copiesCount,
                                     jobName = "Photobooth ${settings.eventTitle}"
                                 )
 
@@ -179,7 +181,7 @@ fun MainPhotoboothScreen(
                                 printer.waitForPrintCompletion(
                                     ip = settings.printerIp,
                                     port = settings.printerPort,
-                                    maxWaitSeconds = settings.printTimeoutSeconds
+                                    maxWaitSeconds = totalWait
                                 ) { remaining, msg ->
                                     screenState = PhotoboothScreenState.Printing(
                                         remainingSeconds = remaining,
@@ -190,7 +192,7 @@ fun MainPhotoboothScreen(
 
                                 screenState = PhotoboothScreenState.Printing(
                                     remainingSeconds = 0,
-                                    statusMessage = "Stampa completata!",
+                                    statusMessage = "Stampa completata ($copiesCount copie)!",
                                     isCompleted = true
                                 )
 
@@ -202,7 +204,8 @@ fun MainPhotoboothScreen(
                                 printer.printDirect(
                                     ip = settings.printerIp,
                                     port = settings.printerPort,
-                                    jpegBytes = jpegBytes
+                                    jpegBytes = jpegBytes,
+                                    copies = copiesCount
                                 )
                                 delay(2000)
                                 screenState = PhotoboothScreenState.Idle
@@ -235,7 +238,7 @@ fun MainPhotoboothScreen(
             }
         }
 
-        // Settings Dialog
+        // Settings Dialog (Con password 3552)
         if (showSettingsDialog) {
             SettingsDialog(
                 currentSettings = settings,
@@ -243,7 +246,6 @@ fun MainPhotoboothScreen(
                 onSave = { updated ->
                     settings = updated
                     appSettings.saveSettings(updated)
-                    showSettingsDialog = false
                     Toast.makeText(context, "Impostazioni salvate!", Toast.LENGTH_SHORT).show()
                 },
                 onDismiss = {
