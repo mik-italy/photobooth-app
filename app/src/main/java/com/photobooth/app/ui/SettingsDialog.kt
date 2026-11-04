@@ -213,7 +213,7 @@ fun SettingsDialog(
             adminPin = "3552",
             countdownSeconds = countdownSec.toIntOrNull() ?: 5,
             waitForPrinterFinish = waitForPrinter,
-            printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 30
+            printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 40
         )
         onSave(updated)
         onDismiss() // Chiude subito la schermata impostazioni

@@ -20,14 +20,13 @@ import java.io.File
 
 object PhotoStripComposer {
 
-    // FORMATO A5 (148 x 210 mm a 300 DPI)
-    const val SHEET_WIDTH_PORTRAIT = 1748
-    const val SHEET_HEIGHT_PORTRAIT = 2480
-    const val STRIP_WIDTH = SHEET_WIDTH_PORTRAIT / 2 // 874 px each strip
+    // FORMATO CANON SELPHY CP1500 (10x15 cm / 4x6" a 300 DPI nativi - Stampa al vivo senza bordi)
+    const val SHEET_WIDTH_PORTRAIT = 1200
+    const val SHEET_HEIGHT_PORTRAIT = 1800
+    const val STRIP_WIDTH = SHEET_WIDTH_PORTRAIT / 2 // 600 px ciascuna (2x6")
 
-    // FORMATO A5 ORIZZONTALE (210 x 148 mm a 300 DPI)
-    const val SHEET_WIDTH_LANDSCAPE = 2480
-    const val SHEET_HEIGHT_LANDSCAPE = 1748
+    const val SHEET_WIDTH_LANDSCAPE = 1800
+    const val SHEET_HEIGHT_LANDSCAPE = 1200
 
     fun createPrintSheet(
         context: Context,
@@ -57,9 +56,9 @@ object PhotoStripComposer {
     }
 
     /**
-     * 4-Photo Double Strip su foglio A5 (1748 x 2480 px a 300 DPI):
-     * - Due strisce da 874 x 2480 px ciascuna
-     * - 4 foto verticali con spazio massimizzato
+     * 4-Photo Double Strip (10x15 cm / 1200 x 1800 px a 300 DPI):
+     * - Due strisce 2x6" (600 x 1800 px) affiancate
+     * - Sfondo al vivo da margine a margine (0% bordi bianchi)
      * - Testo strictly su singola riga auto-scalato (solo se showTitleOnPrints è true)
      */
     private fun createDoubleStrip4Photos(
@@ -70,6 +69,7 @@ object PhotoStripComposer {
         val sheetBitmap = Bitmap.createBitmap(SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(sheetBitmap)
 
+        // Sfondo a filo margine (0 bordi bianchi)
         drawBackground(canvas, SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, settings.stripBgImagePath, settings.stripBackgroundColor)
 
         // Striscia Sinistra
@@ -78,19 +78,19 @@ object PhotoStripComposer {
         // Striscia Destra (duplicata)
         drawStrip4Photos(canvas, photos, settings, titleTypeface, offsetX = STRIP_WIDTH.toFloat())
 
-        // Linea tratteggiata di taglio centrale tra le due strisce A5
+        // Linea tratteggiata di taglio centrale tra le due strisce 2x6"
         val cutLinePaint = Paint().apply {
             color = Color.rgb(180, 180, 180)
-            strokeWidth = 2.5f
+            strokeWidth = 2f
             style = Paint.Style.STROKE
-            pathEffect = DashPathEffect(floatArrayOf(18f, 18f), 0f)
+            pathEffect = DashPathEffect(floatArrayOf(14f, 14f), 0f)
             isAntiAlias = true
         }
         canvas.drawLine(
             STRIP_WIDTH.toFloat(),
-            30f,
+            20f,
             STRIP_WIDTH.toFloat(),
-            (SHEET_HEIGHT_PORTRAIT - 30).toFloat(),
+            (SHEET_HEIGHT_PORTRAIT - 20).toFloat(),
             cutLinePaint
         )
 
@@ -104,11 +104,11 @@ object PhotoStripComposer {
         titleTypeface: Typeface,
         offsetX: Float
     ) {
-        val photoMarginX = 54f
-        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 766 px
-        val photoHeight = 506f
-        val topMargin = 38f
-        val spacing = 16f
+        val photoMarginX = 36f
+        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 528 px
+        val photoHeight = 370f
+        val topMargin = 26f
+        val spacing = 12f
 
         val isDark = isDarkBackground(settings.stripBackgroundColor)
 
@@ -122,7 +122,7 @@ object PhotoStripComposer {
         val borderPaint = Paint().apply {
             color = borderColor
             style = Paint.Style.STROKE
-            strokeWidth = 3f
+            strokeWidth = 2.5f
             isAntiAlias = true
         }
 
@@ -153,7 +153,7 @@ object PhotoStripComposer {
         if (settings.showTitleOnPrints && settings.eventTitle.isNotBlank()) {
             val footerTop = topMargin + (4 * (photoHeight + spacing))
             val footerBottom = SHEET_HEIGHT_PORTRAIT.toFloat()
-            val footerCenterY = footerTop + ((footerBottom - footerTop) / 2f) + 10f
+            val footerCenterY = footerTop + ((footerBottom - footerTop) / 2f) + 8f
             val footerCenterX = offsetX + (STRIP_WIDTH / 2f)
 
             val maxAllowedTextWidth = photoWidth * 0.94f
@@ -168,9 +168,9 @@ object PhotoStripComposer {
             }
 
             // Auto-scale su riga singola
-            var currentSize = (settings.titleFontSize * 1.45f).coerceIn(36f, 86f)
+            var currentSize = settings.titleFontSize.toFloat().coerceIn(28f, 65f)
             titlePaint.textSize = currentSize
-            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 20f) {
+            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 16f) {
                 currentSize -= 2f
                 titlePaint.textSize = currentSize
             }
@@ -180,8 +180,9 @@ object PhotoStripComposer {
     }
 
     /**
-     * Foto Singola Orizzontale su foglio A5 (2480 x 1748 px a 300 DPI):
-     * - Foto orizzontale pulita senza bordo bianco (disegnata direttamente sullo sfondo)
+     * Foto Singola Orizzontale (10x15 cm / 1800 x 1200 px a 300 DPI):
+     * - Sfondo al vivo da margine a margine (0% bordi bianchi)
+     * - Nessun bordo bianco/passepartout sulla foto
      * - Testo strictly su riga singola auto-scalato in basso
      */
     private fun createSingleHorizontalPhoto(
@@ -192,14 +193,15 @@ object PhotoStripComposer {
         val sheetBitmap = Bitmap.createBitmap(SHEET_WIDTH_LANDSCAPE, SHEET_HEIGHT_LANDSCAPE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(sheetBitmap)
 
+        // Sfondo a filo margine (0 bordi bianchi)
         drawBackground(canvas, SHEET_WIDTH_LANDSCAPE, SHEET_HEIGHT_LANDSCAPE, settings.singlePhotoBgImagePath, settings.stripBackgroundColor)
 
         val isDark = isDarkBackground(settings.stripBackgroundColor)
 
-        val outerMarginX = 80f
-        val outerMarginTop = 60f
-        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 2320 px
-        val photoHeight = 1360f
+        val outerMarginX = 60f
+        val outerMarginTop = 45f
+        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 1680 px
+        val photoHeight = 980f
 
         val photoRect = RectF(
             outerMarginX,
@@ -208,7 +210,7 @@ object PhotoStripComposer {
             outerMarginTop + photoHeight
         )
 
-        // Foto disegnata direttamente SENZA alcun bordo bianco/passepartout
+        // Foto pulita senza bordo bianco/passepartout
         if (photo != null) {
             drawCenterCropBitmap(canvas, photo, photoRect)
         } else {
@@ -222,7 +224,7 @@ object PhotoStripComposer {
         if (settings.showTitleOnPrints && settings.eventTitle.isNotBlank()) {
             val footerTop = outerMarginTop + photoHeight
             val footerBottom = SHEET_HEIGHT_LANDSCAPE.toFloat()
-            val centerY = footerTop + ((footerBottom - footerTop) / 2f) + 14f
+            val centerY = footerTop + ((footerBottom - footerTop) / 2f) + 8f
             val centerX = SHEET_WIDTH_LANDSCAPE / 2f
 
             val primaryTextColor = try {
@@ -243,9 +245,9 @@ object PhotoStripComposer {
             }
 
             // Auto-scale su riga singola
-            var currentSize = (settings.titleFontSize * 1.9f).coerceIn(50f, 120f)
+            var currentSize = (settings.titleFontSize * 1.35f).coerceIn(36f, 85f)
             titlePaint.textSize = currentSize
-            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 26f) {
+            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 20f) {
                 currentSize -= 2f
                 titlePaint.textSize = currentSize
             }
@@ -264,6 +266,7 @@ object PhotoStripComposer {
                 try {
                     val customBg = BitmapFactory.decodeFile(bgFile.absolutePath)
                     if (customBg != null) {
+                        // Disegna a filo margine (da 0,0 a width,height)
                         drawCenterCropBitmap(canvas, customBg, RectF(0f, 0f, width.toFloat(), height.toFloat()))
                         drewCustomImage = true
                     }

@@ -246,6 +246,7 @@ class CanonSelphyPrinter(private val context: Context) {
         // Job attributes
         dos.writeByte(TAG_JOB_ATTRIBUTES.toInt())
         writeAttribute(dos, TAG_KEYWORD, "media", "na_index-4x6_4x6in")
+        writeAttribute(dos, TAG_KEYWORD, "print-scaling", "fill") // Stampa al vivo (borderless) senza bordi bianchi
         // Copies attribute
         writeIntegerAttribute(dos, "copies", copies.coerceAtLeast(1))
 

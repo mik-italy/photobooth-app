@@ -1,5 +1,6 @@
 package com.photobooth.app.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -8,7 +9,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +26,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -31,7 +35,6 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
@@ -39,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -48,10 +52,44 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private data class DistractionMessage(
+    val title: String,
+    val subtitle: String,
+    val hint: String
+)
+
+private val distractionMessages = listOf(
+    DistractionMessage(
+        title = "Preparatevi per la prossima foto!",
+        subtitle = "Scegliete i gadget e mettetevi in posa!",
+        hint = "🕶️ Occhiali  •  🎩 Cappelli  •  ✨ Sorrisi pronti"
+    ),
+    DistractionMessage(
+        title = "Cercate il vostro look perfetto!",
+        subtitle = "Provate parrucche, baffi e accessori stravaganti!",
+        hint = "🎭 Maschere  •  🥸 Baffi finti  •  👑 Corone"
+    ),
+    DistractionMessage(
+        title = "Chi farà la posa più divertente?",
+        subtitle = "Sfida i tuoi amici: bacio, linguaccia o sorriso da star!",
+        hint = "✌️ Segno vittoria  •  😘 Bacio  •  ⭐ Posa da star"
+    ),
+    DistractionMessage(
+        title = "La stampante sta sfornando il ricordo!",
+        subtitle = "Tra pochissimo la vostra stampa sarà pronta da ritirare.",
+        hint = "📸 Carta fotografica  •  ✨ Finitura lucida"
+    ),
+    DistractionMessage(
+        title = "Tutti pronti per il prossimo giro?",
+        subtitle = "Raggruppatevi davanti all'obiettivo, si ricomincia!",
+        hint = "🎉 Divertimento  •  🥳 Festa  •  💃 In posa"
+    )
+)
+
 @Composable
 fun PrintingScreen(
     remainingSeconds: Int,
-    totalTimeoutSeconds: Int = 30,
+    totalTimeoutSeconds: Int = 40,
     statusMessage: String,
     isCompleted: Boolean,
     onCancel: () -> Unit = {}
@@ -70,6 +108,12 @@ fun PrintingScreen(
     val progress = if (totalTimeoutSeconds > 0) {
         ((totalTimeoutSeconds - remainingSeconds).toFloat() / totalTimeoutSeconds.toFloat()).coerceIn(0f, 1f)
     } else 0f
+
+    // Calcolo indice messaggio che scorre ogni 7 secondi
+    val currentMessageIndex = remember(remainingSeconds, totalTimeoutSeconds) {
+        val elapsed = (totalTimeoutSeconds - remainingSeconds).coerceAtLeast(0)
+        (elapsed / 7) % distractionMessages.size
+    }
 
     val isOfflineOrError = statusMessage.contains("offline", ignoreCase = true) ||
             statusMessage.contains("errore", ignoreCase = true) ||
@@ -94,7 +138,7 @@ fun PrintingScreen(
                     shape = RoundedCornerShape(24.dp),
                     color = Color(0xFF141414),
                     border = BorderStroke(1.dp, Color(0xFF262626)),
-                    modifier = Modifier.padding(bottom = 28.dp)
+                    modifier = Modifier.padding(bottom = 24.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
@@ -104,7 +148,9 @@ fun PrintingScreen(
                             imageVector = if (isOfflineOrError) Icons.Default.WarningAmber else Icons.Default.Print,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier
+                                .size(18.dp)
+                                .scale(pulseScale)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -117,43 +163,56 @@ fun PrintingScreen(
                     }
                 }
 
-                // Titolo Principale Coinvolgente: "Preparatevi per la prossima foto!"
-                Text(
-                    text = "Preparatevi per la prossima foto!",
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                // TESTI ANIMATI CHE SCORRONO PER DISTRARRE E INTRATTENERE
+                AnimatedContent(
+                    targetState = currentMessageIndex,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(500)) + slideInVertically { it / 3 })
+                            .togetherWith(fadeOut(animationSpec = tween(350)) + slideOutVertically { -it / 3 })
+                    },
+                    label = "distractionAnimation"
+                ) { index ->
+                    val msg = distractionMessages[index]
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = msg.title,
+                            fontSize = 38.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                // Sottotitolo: "Scegliete i gadget e mettetevi in posa!"
-                Text(
-                    text = "Scegliete i gadget e mettetevi in posa!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.9f),
-                    textAlign = TextAlign.Center
-                )
+                        Text(
+                            text = msg.subtitle,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            textAlign = TextAlign.Center
+                        )
 
-                Spacer(modifier = Modifier.height(26.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                // Pillola Gadget Suggestiva
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF181818),
-                    border = BorderStroke(1.dp, Color(0xFF2A2A2A)),
-                    modifier = Modifier.padding(bottom = 30.dp)
-                ) {
-                    Text(
-                        text = "🕶️ Occhiali  •  🎩 Cappelli  •  ✨ Sorrisi pronti",
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Normal,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                    )
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF181818),
+                            border = BorderStroke(1.dp, Color(0xFF2A2A2A))
+                        ) {
+                            Text(
+                                text = msg.hint,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
+                            )
+                        }
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(28.dp))
 
                 // Progress Bar Monocromatica
                 LinearProgressIndicator(
@@ -178,7 +237,7 @@ fun PrintingScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(34.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
                 // Azione: Salta Attesa / Nuovo Scatto
                 if (isOfflineOrError) {

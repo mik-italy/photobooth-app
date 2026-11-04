@@ -38,17 +38,15 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.8
-        name: "Photobooth App v1.0.8 - Stampa Background 30s, Schermata Gadget, PIN Protetto & UI Scatto"
+        tag_name: v1.0.9
+        name: "Photobooth App v1.0.9 - Timer 40s, Testi Attesa Animati & Stampa 10x15 Senza Bordi Bianchi"
         body: |
-          ### Photobooth Android v1.0.8 📸🖨️
+          ### Photobooth Android v1.0.9 📸🖨️
           
           Nuovi aggiornamenti:
-          - **Stampa 100% Invisibile in Background:** rimossa ogni finestra o dialogo di sistema Android, il lavoro IPP viaggia in modo completamente trasparente.
-          - **Attesa Stampa Ridotta a 30s con Intrattenimento:** nuovo timer a 30 secondi con schermata di coinvolgimento: *"Preparatevi per la prossima foto! Scegliete i gadget e mettetevi in posa!"* e pulsante per passare subito al nuovo scatto.
-          - **Scritta Flash 'SORRIDI!':** rimossa l'emoji della fotocamera durante il flash bianco caldo.
-          - **Pulsante Annulla Centrato in Basso:** nella fotocamera il pulsante "Annulla" è ora posizionato al centro in basso per un facile accesso.
-          - **Codice PIN Nascosto:** eliminato ogni riferimento visivo al codice 3552 dall'interfaccia.
+          - **Timer di Stampa a 40 Secondi:** attesa impostata a 40s per copia per rispecchiare con precisione la velocità del ciclo termico della Canon SELPHY.
+          - **Testi di Attesa Dinamici e Animati:** messaggi rotanti animati ogni 7 secondi per intrattenere gli ospiti (*"Preparatevi per la prossima foto!"*, *"Cercate il vostro look perfetto!"*, *"Chi farà la posa più divertente?"*, *"La stampante sta sfornando il vostro ricordo!"*).
+          - **Eliminazione Bordi Bianchi Laterali:** risoluzione e proporzioni del file allineate al formato nativo 10x15cm (1200 x 1800 px a 300 DPI) con comando IPP `print-scaling: fill` (stampa al vivo senza bordi) e sfondo disegnato a filo margine assoluto.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
