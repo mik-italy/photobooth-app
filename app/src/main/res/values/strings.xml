@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Photobooth</string>
+    <string name="touch_to_start">TOCCA PER INIZIARE</string>
+    <string name="get_ready">Preparati!</string>
+    <string name="smile">Sorridi!</string>
+    <string name="photo_counter">Foto %1$d di %2$d</string>
+    <string name="composing">Composizione striscia in corso...</string>
+    <string name="print_button">STAMPA LE FOTO</string>
+    <string name="retake_button">Rifai</string>
+    <string name="printing_title">Stampa in corso...</string>
+    <string name="printing_wait_message">La Canon SELPHY sta stampando la tua striscia fototessera.\nAttendere il termine prima del prossimo scatto.</string>
+    <string name="printing_done_title">Stampa Completata!</string>
+    <string name="printing_done_message">Ritira la tua striscia dalla stampante!</string>
+    <string name="printer_status_ready">Stampante Pronta</string>
+    <string name="printer_status_busy">Stampante Occupata</string>
+    <string name="printer_status_offline">Stampante Non Raggiungibile</string>
+    <string name="settings_title">Impostazioni Photobooth</string>
+</resources>
