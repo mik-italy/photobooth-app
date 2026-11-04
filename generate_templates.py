@@ -89,14 +89,12 @@ w_single, h_single = 2480, 1748
 img_1_guide = Image.new("RGBA", (w_single, h_single), (250, 250, 252, 255))
 draw1 = ImageDraw.Draw(img_1_guide)
 
-single_margin_x = 100
-single_margin_top = 68
-single_photo_w = 2280
-single_photo_h = 1350
+single_margin_x = 80
+single_margin_top = 60
+single_photo_w = 2320
+single_photo_h = 1360
 
-# Passepartout frame
-draw1.rectangle([single_margin_x - 16, single_margin_top - 16, single_margin_x + single_photo_w + 16, single_margin_top + single_photo_h + 16], fill=(245, 245, 248, 255), outline=(180, 180, 200, 255), width=3)
-# Area foto
+# Area foto (SENZA bordo bianco/passepartout)
 draw1.rectangle([single_margin_x, single_margin_top, single_margin_x + single_photo_w, single_margin_top + single_photo_h], fill=(235, 240, 252, 255), outline=(40, 53, 147, 255), width=3)
 
 font_big = get_font(44)

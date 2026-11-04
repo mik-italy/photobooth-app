@@ -153,6 +153,7 @@ class CanonSelphyPrinter(private val context: Context) {
     ): Boolean = withContext(Dispatchers.IO) {
         var elapsed = 0
         var hasSeenProcessing = false
+        var consecutiveOfflineCount = 0
 
         while (elapsed < maxWaitSeconds) {
             val remaining = maxWaitSeconds - elapsed
@@ -161,9 +162,11 @@ class CanonSelphyPrinter(private val context: Context) {
             when (statusResult.state) {
                 PrinterState.PROCESSING -> {
                     hasSeenProcessing = true
+                    consecutiveOfflineCount = 0
                     onProgressUpdate(remaining, "La Canon SELPHY sta stampando...")
                 }
                 PrinterState.IDLE -> {
+                    consecutiveOfflineCount = 0
                     if (hasSeenProcessing || elapsed >= (maxWaitSeconds / 2)) {
                         onProgressUpdate(0, "Stampa completata!")
                         return@withContext true
@@ -172,9 +175,18 @@ class CanonSelphyPrinter(private val context: Context) {
                     }
                 }
                 PrinterState.STOPPED -> {
-                    onProgressUpdate(remaining, "Attenzione: stampante in pausa o carta/inchiostro esauriti!")
+                    consecutiveOfflineCount = 0
+                    onProgressUpdate(remaining, "Attenzione: stampante bloccata ($statusResult.message)!")
                 }
-                PrinterState.OFFLINE, PrinterState.UNKNOWN -> {
+                PrinterState.OFFLINE -> {
+                    consecutiveOfflineCount++
+                    if (consecutiveOfflineCount >= 2) {
+                        onProgressUpdate(remaining, "Stampante offline ($ip). Puoi uscire o verificare la connessione.")
+                    } else {
+                        onProgressUpdate(remaining, "Connessione alla stampante in corso...")
+                    }
+                }
+                PrinterState.UNKNOWN -> {
                     onProgressUpdate(remaining, "Stampa in corso... (${remaining}s)")
                 }
             }

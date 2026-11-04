@@ -30,6 +30,7 @@ import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
 import com.photobooth.app.printer.PrinterState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -47,6 +48,7 @@ fun MainPhotoboothScreen(
     var screenState by remember { mutableStateOf<PhotoboothScreenState>(PhotoboothScreenState.Idle) }
     var printerState by remember { mutableStateOf(PrinterState.UNKNOWN) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var printJob by remember { mutableStateOf<Job?>(null) }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -177,7 +179,7 @@ fun MainPhotoboothScreen(
                                     isCompleted = false
                                 )
 
-                                scope.launch {
+                                printJob = scope.launch {
                                     val printResult = printer.printDirect(
                                         ip = settings.printerIp,
                                         port = settings.printerPort,
@@ -212,7 +214,7 @@ fun MainPhotoboothScreen(
                                     screenState = PhotoboothScreenState.Idle
                                 }
                             } else {
-                                scope.launch {
+                                printJob = scope.launch {
                                     printer.printDirect(
                                         ip = settings.printerIp,
                                         port = settings.printerPort,
@@ -245,7 +247,11 @@ fun MainPhotoboothScreen(
                         remainingSeconds = state.remainingSeconds,
                         totalTimeoutSeconds = settings.printTimeoutSeconds,
                         statusMessage = state.statusMessage,
-                        isCompleted = state.isCompleted
+                        isCompleted = state.isCompleted,
+                        onCancel = {
+                            printJob?.cancel()
+                            screenState = PhotoboothScreenState.Idle
+                        }
                     )
                 }
             }

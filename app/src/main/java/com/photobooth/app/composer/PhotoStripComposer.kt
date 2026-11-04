@@ -181,7 +181,7 @@ object PhotoStripComposer {
 
     /**
      * Foto Singola Orizzontale su foglio A5 (2480 x 1748 px a 300 DPI):
-     * - Foto orizzontale incorniciata ad alta risoluzione
+     * - Foto orizzontale pulita senza bordo bianco (disegnata direttamente sullo sfondo)
      * - Testo strictly su riga singola auto-scalato in basso
      */
     private fun createSingleHorizontalPhoto(
@@ -196,10 +196,10 @@ object PhotoStripComposer {
 
         val isDark = isDarkBackground(settings.stripBackgroundColor)
 
-        val outerMarginX = 100f
-        val outerMarginTop = 68f
-        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 2280 px
-        val photoHeight = 1350f
+        val outerMarginX = 80f
+        val outerMarginTop = 60f
+        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 2320 px
+        val photoHeight = 1360f
 
         val photoRect = RectF(
             outerMarginX,
@@ -208,29 +208,7 @@ object PhotoStripComposer {
             outerMarginTop + photoHeight
         )
 
-        // Cornice / Passepartout
-        val matPaint = Paint().apply {
-            color = if (isDark) Color.rgb(32, 32, 32) else Color.WHITE
-            style = Paint.Style.FILL
-            isAntiAlias = true
-        }
-        val matRect = RectF(
-            photoRect.left - 16f,
-            photoRect.top - 16f,
-            photoRect.right + 16f,
-            photoRect.bottom + 16f
-        )
-        canvas.drawRect(matRect, matPaint)
-
-        // Bordo esterno passepartout
-        val outerFramePaint = Paint().apply {
-            color = if (isDark) Color.rgb(75, 75, 75) else Color.rgb(205, 205, 205)
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-            isAntiAlias = true
-        }
-        canvas.drawRect(matRect, outerFramePaint)
-
+        // Foto disegnata direttamente SENZA alcun bordo bianco/passepartout
         if (photo != null) {
             drawCenterCropBitmap(canvas, photo, photoRect)
         } else {
@@ -239,14 +217,6 @@ object PhotoStripComposer {
             }
             canvas.drawRect(photoRect, placeholderPaint)
         }
-
-        val innerBorderPaint = Paint().apply {
-            color = if (isDark) Color.rgb(65, 65, 65) else Color.rgb(220, 220, 220)
-            style = Paint.Style.STROKE
-            strokeWidth = 2f
-            isAntiAlias = true
-        }
-        canvas.drawRect(photoRect, innerBorderPaint)
 
         // Footer: Titolo Evento SOLO se showTitleOnPrints è true (strict single-line auto-scale)
         if (settings.showTitleOnPrints && settings.eventTitle.isNotBlank()) {

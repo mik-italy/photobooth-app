@@ -246,12 +246,12 @@ fun CameraCaptureScreen(
 
                     Box(
                         modifier = Modifier
-                            .size(if (isCurrent) 18.dp else 14.dp)
+                            .size(if (isCurrent) 18.dp else 12.dp)
                             .background(
                                 color = when {
-                                    isDone -> Color(0xFF4CAF50)
-                                    isCurrent -> Color(0xFFE91E63)
-                                    else -> Color.White.copy(alpha = 0.4f)
+                                    isDone -> Color.White
+                                    isCurrent -> Color.White
+                                    else -> Color.White.copy(alpha = 0.35f)
                                 },
                                 shape = CircleShape
                             )

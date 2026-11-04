@@ -1,6 +1,7 @@
 package com.photobooth.app.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -61,7 +61,7 @@ fun PreviewScreen(
     onTimeout: () -> Unit
 ) {
     var remainingInactivitySeconds by remember { mutableIntStateOf(60) }
-    var copiesCount by remember { mutableIntStateOf(1) } // Scelta numero copie
+    var copiesCount by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(Unit) {
         while (remainingInactivitySeconds > 0) {
@@ -77,11 +77,11 @@ fun PreviewScreen(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121216))
+            .background(Color.Black)
             .padding(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Column: Sheet Preview
+        // Colonna Sinistra: Anteprima Foto A5
         Box(
             modifier = Modifier
                 .weight(1.3f)
@@ -92,22 +92,22 @@ fun PreviewScreen(
                 modifier = Modifier
                     .fillMaxHeight(0.92f)
                     .aspectRatio(bitmapAspectRatio)
-                    .shadow(16.dp, RoundedCornerShape(8.dp)),
-                shape = RoundedCornerShape(8.dp),
+                    .shadow(16.dp, RoundedCornerShape(4.dp)),
+                shape = RoundedCornerShape(4.dp),
                 color = Color.White
             ) {
                 Image(
                     bitmap = composedBitmap.asImageBitmap(),
-                    contentDescription = "Anteprima Stampa Photobooth",
+                    contentDescription = "Anteprima Stampa A5 Photobooth",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(32.dp))
+        Spacer(modifier = Modifier.width(36.dp))
 
-        // Right Column: Controls, Copies selector & Actions
+        // Colonna Destra: Controlli e Azioni (Minimale Monocromatico)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -125,26 +125,27 @@ fun PreviewScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Scegli quante copie stampare con la Canon SELPHY.",
+                text = "Scegli le copie e premi Stampa",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.7f)
+                color = Color.White.copy(alpha = 0.6f)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // SELETTORE NUMERO COPIE DA STAMPARE
+            // Selettore Copie Monocromatico
             Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color(0x33FFFFFF),
-                modifier = Modifier.padding(bottom = 18.dp)
+                shape = RoundedCornerShape(26.dp),
+                color = Color(0xFF141414),
+                border = BorderStroke(1.dp, Color(0xFF262626)),
+                modifier = Modifier.padding(bottom = 20.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Copie da stampare:",
-                        color = Color.White,
+                        text = "Copie:",
+                        color = Color.White.copy(alpha = 0.8f),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -155,62 +156,77 @@ fun PreviewScreen(
                         onClick = { if (copiesCount > 1) copiesCount-- },
                         enabled = copiesCount > 1,
                         modifier = Modifier.size(38.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFF3F51B5))
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Color(0xFF242424),
+                            disabledContainerColor = Color(0xFF181818)
+                        )
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Meno copie", tint = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "Meno copie",
+                            tint = if (copiesCount > 1) Color.White else Color(0xFF555555)
+                        )
                     }
 
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
                     Text(
                         text = "$copiesCount",
-                        color = Color(0xFFFFD700),
+                        color = Color.White,
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
                     FilledIconButton(
                         onClick = { if (copiesCount < 6) copiesCount++ },
                         enabled = copiesCount < 6,
                         modifier = Modifier.size(38.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFF3F51B5))
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Color(0xFF242424),
+                            disabledContainerColor = Color(0xFF181818)
+                        )
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Più copie", tint = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Più copie",
+                            tint = if (copiesCount < 6) Color.White else Color(0xFF555555)
+                        )
                     }
                 }
             }
 
-            // Printer Busy Warning Banner if active
+            // Avviso Stampante Occupata
             if (isPrinterBusy) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0x33FFC107),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFF1C1C1C),
+                    border = BorderStroke(1.dp, Color(0xFF333333)),
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .padding(bottom = 14.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(0xFFFFC107),
-                            strokeWidth = 3.dp
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = "Stampante occupata. Attendere...",
-                            color = Color(0xFFFFE082),
+                            color = Color.White.copy(alpha = 0.85f),
                             fontSize = 13.sp
                         )
                     }
                 }
             }
 
-            // Print Button (Displays copies number dynamically)
+            // Pulsante STAMPA (Bianco Puro con testo nero ad alto contrasto)
             Button(
                 onClick = { onPrintClicked(copiesCount) },
                 enabled = !isPrinterBusy,
@@ -219,8 +235,10 @@ fun PreviewScreen(
                     .height(68.dp),
                 shape = RoundedCornerShape(34.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
-                    disabledContainerColor = Color(0xFF616161)
+                    containerColor = Color.White,
+                    contentColor = Color.Black,
+                    disabledContainerColor = Color(0xFF333333),
+                    disabledContentColor = Color(0xFF777777)
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
             ) {
@@ -228,26 +246,29 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Print,
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp)
+                        tint = if (!isPrinterBusy) Color.Black else Color(0xFF777777),
+                        modifier = Modifier.size(26.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = if (isPrinterBusy) "STAMPANTE OCCUPATA..." else "STAMPA $copiesCount ${if (copiesCount == 1) "COPIA" else "COPIE"}",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold
+                        text = if (isPrinterBusy) "STAMPANTE IN CORSO..." else "STAMPA $copiesCount ${if (copiesCount == 1) "COPIA" else "COPIE"}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Retake Button
+            // Pulsante Rifai gli Scatti
             OutlinedButton(
                 onClick = onRetakeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .height(48.dp),
                 shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Color(0xFF333333)),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
                 )
@@ -256,50 +277,55 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White.copy(alpha = 0.85f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Rifai gli scatti",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.85f)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Return to Home Button
+            // Pulsante Torna alla Home
             OutlinedButton(
                 onClick = onHomeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .height(48.dp),
                 shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, Color(0xFF262626)),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White.copy(alpha = 0.8f)
+                    contentColor = Color.White.copy(alpha = 0.7f)
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Home,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White.copy(alpha = 0.6f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Torna alla Home",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Normal
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White.copy(alpha = 0.6f)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Ritorno automatico alla schermata iniziale tra ${remainingInactivitySeconds}s",
-                color = Color.White.copy(alpha = 0.4f),
+                text = "Ritorno automatico alla Home tra ${remainingInactivitySeconds}s",
+                color = Color.White.copy(alpha = 0.35f),
                 fontSize = 12.sp
             )
         }

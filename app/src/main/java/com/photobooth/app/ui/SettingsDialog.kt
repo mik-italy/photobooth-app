@@ -58,6 +58,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -68,6 +70,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import com.photobooth.app.data.FontChoice
 import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
@@ -91,6 +95,15 @@ fun SettingsDialog(
     var isUnlocked by remember { mutableStateOf(false) }
     var enteredPin by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
+    val pinFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isUnlocked) {
+        if (!isUnlocked) {
+            delay(250)
+            pinFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     // Settings fields
     var printerIp by remember { mutableStateOf(currentSettings.printerIp) }
@@ -260,7 +273,10 @@ fun SettingsDialog(
                             focusedContainerColor = Color(0xFF26262E),
                             unfocusedContainerColor = Color(0xFF26262E)
                         ),
-                        singleLine = true
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .focusRequester(pinFocusRequester)
                     )
 
                     if (pinError) {
