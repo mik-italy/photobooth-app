@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,7 +34,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainPhotoboothScreen() {
+fun MainPhotoboothScreen(
+    onSetFlashBrightness: (Boolean) -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val appSettings = remember { AppSettings(context) }
@@ -78,7 +79,7 @@ fun MainPhotoboothScreen() {
             while (isActive) {
                 val res = printer.getPrinterStatus(settings.printerIp, settings.printerPort)
                 printerState = res.state
-                delay(10000) // check every 10 seconds
+                delay(10000)
             }
         }
     }
@@ -110,13 +111,13 @@ fun MainPhotoboothScreen() {
                 CameraCaptureScreen(
                     totalShots = settings.shotsPerSession,
                     countdownSeconds = settings.countdownSeconds,
+                    onSetFlashBrightness = onSetFlashBrightness,
                     onAllShotsCaptured = { capturedBitmaps ->
                         screenState = PhotoboothScreenState.Composing
                         scope.launch {
                             val doubleStripBitmap = PhotoStripComposer.createDoubleStrip(
-                                capturedBitmaps,
-                                settings.eventTitle,
-                                settings.eventSubtitle
+                                photos = capturedBitmaps,
+                                settings = settings
                             )
                             screenState = PhotoboothScreenState.Preview(doubleStripBitmap)
                         }
@@ -151,7 +152,6 @@ fun MainPhotoboothScreen() {
                         val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
 
                         if (settings.waitForPrinterFinish) {
-                            // Active blocking print screen
                             screenState = PhotoboothScreenState.Printing(
                                 remainingSeconds = settings.printTimeoutSeconds,
                                 statusMessage = "Invio lavoro alla Canon SELPHY CP1500...",
@@ -159,7 +159,6 @@ fun MainPhotoboothScreen() {
                             )
 
                             scope.launch {
-                                // 1. Send print job via IPP
                                 val printResult = printer.printDirect(
                                     ip = settings.printerIp,
                                     port = settings.printerPort,
@@ -168,11 +167,9 @@ fun MainPhotoboothScreen() {
                                 )
 
                                 if (printResult.isFailure) {
-                                    // Fallback to Android Print Manager if direct IPP failed
                                     printer.printViaAndroidPrintManager(bitmapToPrint)
                                 }
 
-                                // 2. Poll printer until idle or timeout finishes
                                 printer.waitForPrintCompletion(
                                     ip = settings.printerIp,
                                     port = settings.printerPort,
@@ -185,18 +182,16 @@ fun MainPhotoboothScreen() {
                                     )
                                 }
 
-                                // 3. Stampa completata! Show success message
                                 screenState = PhotoboothScreenState.Printing(
                                     remainingSeconds = 0,
                                     statusMessage = "Stampa completata!",
                                     isCompleted = true
                                 )
 
-                                delay(4500) // Keep success screen visible for 4.5 seconds
+                                delay(4500)
                                 screenState = PhotoboothScreenState.Idle
                             }
                         } else {
-                            // Non-blocking mode
                             scope.launch {
                                 printer.printDirect(
                                     ip = settings.printerIp,

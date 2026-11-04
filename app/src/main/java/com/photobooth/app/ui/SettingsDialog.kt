@@ -1,6 +1,8 @@
 package com.photobooth.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,7 +33,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -44,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -72,6 +76,9 @@ fun SettingsDialog(
     var printerPort by remember { mutableStateOf(currentSettings.printerPort.toString()) }
     var eventTitle by remember { mutableStateOf(currentSettings.eventTitle) }
     var eventSubtitle by remember { mutableStateOf(currentSettings.eventSubtitle) }
+    var eventHashtag by remember { mutableStateOf(currentSettings.eventHashtag) }
+    var stripBgColor by remember { mutableStateOf(currentSettings.stripBackgroundColor) }
+    var stripTextColor by remember { mutableStateOf(currentSettings.stripTextColor) }
     var countdownSec by remember { mutableStateOf(currentSettings.countdownSeconds.toString()) }
     var waitForPrinter by remember { mutableStateOf(currentSettings.waitForPrinterFinish) }
     var timeoutSec by remember { mutableStateOf(currentSettings.printTimeoutSeconds.toString()) }
@@ -87,7 +94,7 @@ fun SettingsDialog(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
             modifier = Modifier
-                .fillMaxWidth(0.9f)
+                .fillMaxWidth(0.92f)
                 .padding(16.dp)
         ) {
             if (!isUnlocked) {
@@ -198,14 +205,127 @@ fun SettingsDialog(
 
                     Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
 
-                    // Section: Canon SELPHY Printer
+                    // SECTION 1: Strip Customization (Duplicated on both strips)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Palette, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "PERSONALIZZAZIONE STRISCIA 2X6 (DUPLICATA AUTOMATICAMENTE)",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFD700)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "STAMPANTE CANON SELPHY CP1500",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700)
+                        text = "Configura la grafica per una striscia: verrà clonata identica nella seconda riga sul foglio 10x15.",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp
                     )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedTextField(
+                        value = eventTitle,
+                        onValueChange = { eventTitle = it },
+                        label = { Text("Titolo Evento (es. MARCO & SARA)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color(0xFF2C2C34),
+                            unfocusedContainerColor = Color(0xFF2C2C34)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = eventSubtitle,
+                        onValueChange = { eventSubtitle = it },
+                        label = { Text("Data / Luogo (es. 15 LUGLIO 2026)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color(0xFF2C2C34),
+                            unfocusedContainerColor = Color(0xFF2C2C34)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = eventHashtag,
+                        onValueChange = { eventHashtag = it },
+                        label = { Text("Separatore / Hashtag (es. #NoiDue o ✦ ✦ ✦)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color(0xFF2C2C34),
+                            unfocusedContainerColor = Color(0xFF2C2C34)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Background color presets for strip
+                    Text("Colore Sfondo Striscia:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val bgOptions = listOf(
+                            "#FFFFFF" to "Bianco",
+                            "#181818" to "Nero",
+                            "#FDFBF7" to "Crema",
+                            "#FCE4EC" to "Rosa"
+                        )
+                        bgOptions.forEach { (hex, label) ->
+                            val isSelected = stripBgColor.equals(hex, ignoreCase = true)
+                            val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.White }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .border(
+                                            width = if (isSelected) 3.dp else 1.dp,
+                                            color = if (isSelected) Color(0xFFE91E63) else Color.Gray,
+                                            shape = CircleShape
+                                        )
+                                        .clickable {
+                                            stripBgColor = hex
+                                            // Automatically adjust text color for contrast
+                                            if (hex == "#181818") {
+                                                stripTextColor = "#FFFFFF"
+                                            } else {
+                                                stripTextColor = "#181818"
+                                            }
+                                        }
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(label, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color.White.copy(alpha = 0.1f))
+
+                    // SECTION 2: Canon SELPHY Printer
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Print, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "STAMPANTE CANON SELPHY CP1500",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFD700)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
@@ -238,7 +358,6 @@ fun SettingsDialog(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Test connection button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -284,7 +403,7 @@ fun SettingsDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Section: Wait for printer option
+                    // SECTION 3: Printing Queue Lock
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -329,46 +448,7 @@ fun SettingsDialog(
                         )
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color.White.copy(alpha = 0.1f))
-
-                    // Section: Event & Layout
-                    Text(
-                        text = "EVENTO E GRAFICA STRISCIA 2X6",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = eventTitle,
-                        onValueChange = { eventTitle = it },
-                        label = { Text("Titolo Evento (es. MARCO & SARA)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color(0xFF2C2C34),
-                            unfocusedContainerColor = Color(0xFF2C2C34)
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = eventSubtitle,
-                        onValueChange = { eventSubtitle = it },
-                        label = { Text("Data / Sottotitolo (es. 20 LUGLIO 2026)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color(0xFF2C2C34),
-                            unfocusedContainerColor = Color(0xFF2C2C34)
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
                         value = countdownSec,
@@ -402,6 +482,9 @@ fun SettingsDialog(
                                     printerPort = printerPort.toIntOrNull() ?: 631,
                                     eventTitle = eventTitle.trim(),
                                     eventSubtitle = eventSubtitle.trim(),
+                                    eventHashtag = eventHashtag.trim(),
+                                    stripBackgroundColor = stripBgColor,
+                                    stripTextColor = stripTextColor,
                                     countdownSeconds = countdownSec.toIntOrNull() ?: 3,
                                     waitForPrinterFinish = waitForPrinter,
                                     printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 45
