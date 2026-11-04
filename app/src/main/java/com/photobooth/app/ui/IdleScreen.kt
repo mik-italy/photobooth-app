@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,12 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.photobooth.app.R
@@ -77,9 +78,9 @@ fun IdleScreen(
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.05f,
+        targetValue = 1.035f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -88,15 +89,7 @@ fun IdleScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F0F14),
-                        Color(0xFF181622),
-                        Color(0xFF0A0A10)
-                    )
-                )
-            )
+            .background(Color.Black)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -104,39 +97,40 @@ fun IdleScreen(
                 onStartSession()
             }
     ) {
-        // Top Printer Status Indicator Badge
+        // Top Printer Status Indicator Badge (Minimale monocromatico)
         Surface(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(24.dp),
             shape = RoundedCornerShape(30.dp),
-            color = Color(0x33000000)
+            color = Color(0xFF141414),
+            border = BorderStroke(1.dp, Color(0xFF262626))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val (color, text) = when (printerState) {
-                    PrinterState.IDLE -> Pair(Color(0xFF4CAF50), "Canon SELPHY: Pronta")
-                    PrinterState.PROCESSING -> Pair(Color(0xFFFFC107), "Canon SELPHY: Stampa in corso...")
-                    PrinterState.STOPPED -> Pair(Color(0xFFF44336), "Canon SELPHY: Errore / Carta")
-                    PrinterState.OFFLINE -> Pair(Color(0xFFFF5722), "Canon SELPHY: Offline (${settings.printerIp})")
-                    PrinterState.UNKNOWN -> Pair(Color.Gray, "Canon SELPHY: In attesa")
+                val (dotColor, text) = when (printerState) {
+                    PrinterState.IDLE -> Pair(Color.White, "Canon SELPHY: Pronta")
+                    PrinterState.PROCESSING -> Pair(Color(0xFFDDDDDD), "Canon SELPHY: In Stampa...")
+                    PrinterState.STOPPED -> Pair(Color(0xFF888888), "Canon SELPHY: Attenzione / Carta")
+                    PrinterState.OFFLINE -> Pair(Color(0xFF555555), "Canon SELPHY: Offline")
+                    PrinterState.UNKNOWN -> Pair(Color(0xFF666666), "Canon SELPHY: Connessione...")
                 }
 
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
-                        .background(color, CircleShape)
+                        .size(10.dp)
+                        .background(dotColor, CircleShape)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Icon(
                     imageVector = Icons.Default.Print,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.8f),
+                    tint = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = text,
                     color = Color.White.copy(alpha = 0.9f),
@@ -146,7 +140,7 @@ fun IdleScreen(
             }
         }
 
-        // Settings button (Protetta da password 3552)
+        // Settings button (Icona monocromatica, protetta da password 3552)
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier
@@ -156,45 +150,48 @@ fun IdleScreen(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = Color.White.copy(alpha = 0.6f),
-                modifier = Modifier.size(34.dp)
+                tint = Color.White.copy(alpha = 0.65f),
+                modifier = Modifier.size(32.dp)
             )
         }
 
-        // Center Content (Titolo ancora più grande e pulsante ingrandito)
+        // Contenuto Centrale Minimale Monocromatico
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
+            // Titolo Evento (Sempre visibile in home, strictly su una riga sola)
+            if (settings.eventTitle.isNotBlank()) {
                 Text(
                     text = settings.eventTitle,
-                    fontSize = 72.sp, // ANCORA PIÙ GRANDE
+                    fontSize = 72.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = titleFont,
-                    letterSpacing = 1.sp,
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(44.dp))
             } else {
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // Main Start Button (ANCORA PIÙ GRANDE)
+            // Pulsante Inizia (Minimale Bianco & Nero ad alto impatto)
             Button(
                 onClick = onStartSession,
                 modifier = Modifier
                     .scale(pulseScale)
-                    .height(96.dp) // Ingrandito
-                    .width(460.dp), // Ingrandito
-                shape = RoundedCornerShape(48.dp),
+                    .height(92.dp)
+                    .width(460.dp),
+                shape = RoundedCornerShape(46.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63)
+                    containerColor = Color.White,
+                    contentColor = Color.Black
                 ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 14.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -203,59 +200,74 @@ fun IdleScreen(
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                        tint = Color.Black,
+                        modifier = Modifier.size(38.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "TOCCA PER INIZIARE",
-                        fontSize = 28.sp, // Testo ingrandito
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp,
-                        color = Color.White
+                        color = Color.Black
                     )
                 }
             }
         }
 
-        // BOTTOM SELECTOR: "4 FOTO" e "1 FOTO" (Senza emoji)
+        // Selettore Formato Inferiore: "4 FOTO" e "1 FOTO" (Minimale Monocromatico)
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 30.dp),
+                .padding(bottom = 32.dp),
             shape = RoundedCornerShape(30.dp),
-            color = Color(0x661E1E2E)
+            color = Color(0xFF141414),
+            border = BorderStroke(1.dp, Color(0xFF262626))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChip(
                     selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
                     onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
-                    label = { Text("4 FOTO", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
+                    label = {
+                        Text(
+                            text = "4 FOTO",
+                            fontSize = 15.sp,
+                            fontWeight = if (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF3F51B5),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0x22FFFFFF),
-                        labelColor = Color.White.copy(alpha = 0.7f)
+                        selectedContainerColor = Color.White,
+                        selectedLabelColor = Color.Black,
+                        containerColor = Color.Transparent,
+                        labelColor = Color.White.copy(alpha = 0.6f)
                     ),
-                    shape = RoundedCornerShape(20.dp),
+                    border = null,
+                    shape = RoundedCornerShape(22.dp),
                     modifier = Modifier.height(44.dp)
                 )
 
                 FilterChip(
                     selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
                     onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
-                    label = { Text("1 FOTO", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
+                    label = {
+                        Text(
+                            text = "1 FOTO",
+                            fontSize = 15.sp,
+                            fontWeight = if (settings.layoutMode == LayoutMode.SINGLE_PHOTO) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF3F51B5),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0x22FFFFFF),
-                        labelColor = Color.White.copy(alpha = 0.7f)
+                        selectedContainerColor = Color.White,
+                        selectedLabelColor = Color.Black,
+                        containerColor = Color.Transparent,
+                        labelColor = Color.White.copy(alpha = 0.6f)
                     ),
-                    shape = RoundedCornerShape(20.dp),
+                    border = null,
+                    shape = RoundedCornerShape(22.dp),
                     modifier = Modifier.height(44.dp)
                 )
             }

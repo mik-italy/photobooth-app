@@ -20,12 +20,14 @@ import java.io.File
 
 object PhotoStripComposer {
 
-    const val SHEET_WIDTH_PORTRAIT = 1200
-    const val SHEET_HEIGHT_PORTRAIT = 1800
-    const val STRIP_WIDTH = SHEET_WIDTH_PORTRAIT / 2 // 600 px each
+    // FORMATO A5 (148 x 210 mm a 300 DPI)
+    const val SHEET_WIDTH_PORTRAIT = 1748
+    const val SHEET_HEIGHT_PORTRAIT = 2480
+    const val STRIP_WIDTH = SHEET_WIDTH_PORTRAIT / 2 // 874 px each strip
 
-    const val SHEET_WIDTH_LANDSCAPE = 1800
-    const val SHEET_HEIGHT_LANDSCAPE = 1200
+    // FORMATO A5 ORIZZONTALE (210 x 148 mm a 300 DPI)
+    const val SHEET_WIDTH_LANDSCAPE = 2480
+    const val SHEET_HEIGHT_LANDSCAPE = 1748
 
     fun createPrintSheet(
         context: Context,
@@ -55,10 +57,10 @@ object PhotoStripComposer {
     }
 
     /**
-     * 4-Photo Double Strip:
-     * - Uses stripBgImagePath if present
-     * - Maximizes vertical space for photos (370px each = 1480px total)
-     * - Draws eventTitle only if showTitleText is true (NO subtitle)
+     * 4-Photo Double Strip su foglio A5 (1748 x 2480 px a 300 DPI):
+     * - Due strisce da 874 x 2480 px ciascuna
+     * - 4 foto verticali con spazio massimizzato
+     * - Testo strictly su singola riga auto-scalato (solo se showTitleOnPrints è true)
      */
     private fun createDoubleStrip4Photos(
         photos: List<Bitmap>,
@@ -70,25 +72,25 @@ object PhotoStripComposer {
 
         drawBackground(canvas, SHEET_WIDTH_PORTRAIT, SHEET_HEIGHT_PORTRAIT, settings.stripBgImagePath, settings.stripBackgroundColor)
 
-        // Draw Left Strip
+        // Striscia Sinistra
         drawStrip4Photos(canvas, photos, settings, titleTypeface, offsetX = 0f)
 
-        // Duplicate Right Strip
+        // Striscia Destra (duplicata)
         drawStrip4Photos(canvas, photos, settings, titleTypeface, offsetX = STRIP_WIDTH.toFloat())
 
-        // Subtle center dotted line
+        // Linea tratteggiata di taglio centrale tra le due strisce A5
         val cutLinePaint = Paint().apply {
-            color = Color.rgb(190, 190, 190)
-            strokeWidth = 2f
+            color = Color.rgb(180, 180, 180)
+            strokeWidth = 2.5f
             style = Paint.Style.STROKE
-            pathEffect = DashPathEffect(floatArrayOf(14f, 14f), 0f)
+            pathEffect = DashPathEffect(floatArrayOf(18f, 18f), 0f)
             isAntiAlias = true
         }
         canvas.drawLine(
             STRIP_WIDTH.toFloat(),
-            20f,
+            30f,
             STRIP_WIDTH.toFloat(),
-            (SHEET_HEIGHT_PORTRAIT - 20).toFloat(),
+            (SHEET_HEIGHT_PORTRAIT - 30).toFloat(),
             cutLinePaint
         )
 
@@ -102,11 +104,11 @@ object PhotoStripComposer {
         titleTypeface: Typeface,
         offsetX: Float
     ) {
-        val photoMarginX = 38f
-        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 524 px
-        val photoHeight = 368f
-        val topMargin = 26f
-        val spacing = 12f
+        val photoMarginX = 54f
+        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 766 px
+        val photoHeight = 506f
+        val topMargin = 38f
+        val spacing = 16f
 
         val isDark = isDarkBackground(settings.stripBackgroundColor)
 
@@ -116,8 +118,7 @@ object PhotoStripComposer {
             if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
         }
 
-        val borderColor = if (isDark) Color.rgb(70, 70, 70) else Color.rgb(225, 225, 225)
-
+        val borderColor = if (isDark) Color.rgb(75, 75, 75) else Color.rgb(220, 220, 220)
         val borderPaint = Paint().apply {
             color = borderColor
             style = Paint.Style.STROKE
@@ -125,7 +126,7 @@ object PhotoStripComposer {
             isAntiAlias = true
         }
 
-        // Draw the 4 photos
+        // Disegna le 4 foto
         for (i in 0 until 4) {
             val photoTop = topMargin + (i * (photoHeight + spacing))
             val photoRect = RectF(
@@ -148,29 +149,40 @@ object PhotoStripComposer {
             canvas.drawRect(photoRect, borderPaint)
         }
 
-        // Footer Area: Event Title only (if enabled)
-        if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
-            val footerTop = topMargin + (4 * (photoHeight + spacing)) + 12f
+        // Footer: Titolo Evento SOLO se showTitleOnPrints è true (strict single-line auto-scale)
+        if (settings.showTitleOnPrints && settings.eventTitle.isNotBlank()) {
+            val footerTop = topMargin + (4 * (photoHeight + spacing))
+            val footerBottom = SHEET_HEIGHT_PORTRAIT.toFloat()
+            val footerCenterY = footerTop + ((footerBottom - footerTop) / 2f) + 10f
             val footerCenterX = offsetX + (STRIP_WIDTH / 2f)
+
+            val maxAllowedTextWidth = photoWidth * 0.94f
 
             val titlePaint = Paint().apply {
                 color = primaryTextColor
-                textSize = settings.titleFontSize.toFloat()
                 typeface = titleTypeface
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
-                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
+                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(160, 255, 255, 255) else Color.argb(180, 0, 0, 0)
                 setShadowLayer(6f, 1f, 1f, shadowColor)
             }
-            canvas.drawText(settings.eventTitle, footerCenterX, footerTop + 65f, titlePaint)
+
+            // Auto-scale su riga singola
+            var currentSize = (settings.titleFontSize * 1.45f).coerceIn(36f, 86f)
+            titlePaint.textSize = currentSize
+            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 20f) {
+                currentSize -= 2f
+                titlePaint.textSize = currentSize
+            }
+
+            canvas.drawText(settings.eventTitle, footerCenterX, footerCenterY, titlePaint)
         }
     }
 
     /**
-     * Single Horizontal Photo (10x15 cm Landscape / 1800 x 1200 px)
-     * - Uses singlePhotoBgImagePath if present
-     * - Horizontal photo with elegant framed border
-     * - Draws eventTitle only if showTitleText is true (NO subtitle)
+     * Foto Singola Orizzontale su foglio A5 (2480 x 1748 px a 300 DPI):
+     * - Foto orizzontale incorniciata ad alta risoluzione
+     * - Testo strictly su riga singola auto-scalato in basso
      */
     private fun createSingleHorizontalPhoto(
         photo: Bitmap?,
@@ -184,10 +196,10 @@ object PhotoStripComposer {
 
         val isDark = isDarkBackground(settings.stripBackgroundColor)
 
-        val outerMarginX = 70f
-        val outerMarginTop = 50f
-        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 1660 px
-        val photoHeight = 920f
+        val outerMarginX = 100f
+        val outerMarginTop = 68f
+        val photoWidth = SHEET_WIDTH_LANDSCAPE - (outerMarginX * 2) // 2280 px
+        val photoHeight = 1350f
 
         val photoRect = RectF(
             outerMarginX,
@@ -196,23 +208,23 @@ object PhotoStripComposer {
             outerMarginTop + photoHeight
         )
 
-        // Mat border / frame around photo
+        // Cornice / Passepartout
         val matPaint = Paint().apply {
-            color = if (isDark) Color.rgb(35, 35, 35) else Color.WHITE
+            color = if (isDark) Color.rgb(32, 32, 32) else Color.WHITE
             style = Paint.Style.FILL
             isAntiAlias = true
         }
         val matRect = RectF(
-            photoRect.left - 12f,
-            photoRect.top - 12f,
-            photoRect.right + 12f,
-            photoRect.bottom + 12f
+            photoRect.left - 16f,
+            photoRect.top - 16f,
+            photoRect.right + 16f,
+            photoRect.bottom + 16f
         )
         canvas.drawRect(matRect, matPaint)
 
-        // Frame outline
+        // Bordo esterno passepartout
         val outerFramePaint = Paint().apply {
-            color = if (isDark) Color.rgb(80, 80, 80) else Color.rgb(200, 200, 200)
+            color = if (isDark) Color.rgb(75, 75, 75) else Color.rgb(205, 205, 205)
             style = Paint.Style.STROKE
             strokeWidth = 3f
             isAntiAlias = true
@@ -223,22 +235,24 @@ object PhotoStripComposer {
             drawCenterCropBitmap(canvas, photo, photoRect)
         } else {
             val placeholderPaint = Paint().apply {
-                color = if (isDark) Color.rgb(50, 50, 50) else Color.rgb(240, 240, 240)
+                color = if (isDark) Color.rgb(45, 45, 45) else Color.rgb(240, 240, 240)
             }
             canvas.drawRect(photoRect, placeholderPaint)
         }
 
         val innerBorderPaint = Paint().apply {
-            color = if (isDark) Color.rgb(70, 70, 70) else Color.rgb(220, 220, 220)
+            color = if (isDark) Color.rgb(65, 65, 65) else Color.rgb(220, 220, 220)
             style = Paint.Style.STROKE
             strokeWidth = 2f
             isAntiAlias = true
         }
         canvas.drawRect(photoRect, innerBorderPaint)
 
-        // Footer Area
-        if (settings.showTitleText && settings.eventTitle.isNotBlank()) {
-            val footerTop = outerMarginTop + photoHeight + 30f
+        // Footer: Titolo Evento SOLO se showTitleOnPrints è true (strict single-line auto-scale)
+        if (settings.showTitleOnPrints && settings.eventTitle.isNotBlank()) {
+            val footerTop = outerMarginTop + photoHeight
+            val footerBottom = SHEET_HEIGHT_LANDSCAPE.toFloat()
+            val centerY = footerTop + ((footerBottom - footerTop) / 2f) + 14f
             val centerX = SHEET_WIDTH_LANDSCAPE / 2f
 
             val primaryTextColor = try {
@@ -247,16 +261,26 @@ object PhotoStripComposer {
                 if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
             }
 
+            val maxAllowedTextWidth = photoWidth * 0.94f
+
             val titlePaint = Paint().apply {
                 color = primaryTextColor
-                textSize = (settings.titleFontSize * 1.35f).coerceAtLeast(52f)
                 typeface = titleTypeface
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
-                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(180, 255, 255, 255) else Color.argb(200, 0, 0, 0)
+                val shadowColor = if (isDarkColor(primaryTextColor)) Color.argb(160, 255, 255, 255) else Color.argb(180, 0, 0, 0)
                 setShadowLayer(8f, 2f, 2f, shadowColor)
             }
-            canvas.drawText(settings.eventTitle, centerX, footerTop + 70f, titlePaint)
+
+            // Auto-scale su riga singola
+            var currentSize = (settings.titleFontSize * 1.9f).coerceIn(50f, 120f)
+            titlePaint.textSize = currentSize
+            while (titlePaint.measureText(settings.eventTitle) > maxAllowedTextWidth && currentSize > 26f) {
+                currentSize -= 2f
+                titlePaint.textSize = currentSize
+            }
+
+            canvas.drawText(settings.eventTitle, centerX, centerY, titlePaint)
         }
 
         return sheetBitmap

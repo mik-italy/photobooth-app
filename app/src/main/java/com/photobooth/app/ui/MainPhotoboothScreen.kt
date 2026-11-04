@@ -73,9 +73,9 @@ fun MainPhotoboothScreen(
         }
     }
 
-    // Periodic printer status check when on Idle screen
-    LaunchedEffect(screenState, settings.printerIp, settings.printerPort) {
-        if (screenState is PhotoboothScreenState.Idle) {
+    // Controllo periodico stato stampante Canon SELPHY durante schermata Idle
+    LaunchedEffect(screenState, settings.printerIp, settings.printerPort, settings.isPaused) {
+        if (screenState is PhotoboothScreenState.Idle && !settings.isPaused) {
             while (isActive) {
                 val res = printer.getPrinterStatus(settings.printerIp, settings.printerPort)
                 printerState = res.state
@@ -85,160 +85,173 @@ fun MainPhotoboothScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        when (val state = screenState) {
-            is PhotoboothScreenState.Idle -> {
-                IdleScreen(
-                    settings = settings,
-                    printerState = printerState,
-                    onStartSession = {
-                        if (hasCameraPermission) {
+        if (settings.isPaused) {
+            // SCHERMATA "IN PAUSA": "Chiama un operatore per attivare il servizio"
+            PausedScreen(
+                adminPin = settings.adminPin,
+                onUnlock = {
+                    val updated = settings.copy(isPaused = false)
+                    settings = updated
+                    appSettings.saveSettings(updated)
+                    Toast.makeText(context, "Photobooth riattivato!", Toast.LENGTH_SHORT).show()
+                }
+            )
+        } else {
+            when (val state = screenState) {
+                is PhotoboothScreenState.Idle -> {
+                    IdleScreen(
+                        settings = settings,
+                        printerState = printerState,
+                        onStartSession = {
+                            if (hasCameraPermission) {
+                                screenState = PhotoboothScreenState.Countdown(
+                                    shotIndex = 1,
+                                    totalShots = settings.totalShots,
+                                    remainingSeconds = settings.countdownSeconds
+                                )
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        onToggleLayoutMode = { newMode ->
+                            val updated = settings.copy(layoutMode = newMode)
+                            settings = updated
+                            appSettings.saveSettings(updated)
+                        },
+                        onOpenSettings = {
+                            showSettingsDialog = true
+                        }
+                    )
+                }
+
+                is PhotoboothScreenState.Countdown -> {
+                    CameraCaptureScreen(
+                        totalShots = settings.totalShots,
+                        countdownSeconds = settings.countdownSeconds,
+                        onSetFlashBrightness = onSetFlashBrightness,
+                        onAllShotsCaptured = { capturedBitmaps ->
+                            screenState = PhotoboothScreenState.Composing
+                            scope.launch {
+                                val sheetBitmap = PhotoStripComposer.createPrintSheet(
+                                    context = context,
+                                    photos = capturedBitmaps,
+                                    settings = settings
+                                )
+                                screenState = PhotoboothScreenState.Preview(sheetBitmap)
+                            }
+                        },
+                        onCancel = {
+                            screenState = PhotoboothScreenState.Idle
+                        }
+                    )
+                }
+
+                is PhotoboothScreenState.Composing -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                        Text(
+                            text = "Elaborazione foto in corso...",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
+                }
+
+                is PhotoboothScreenState.Preview -> {
+                    PreviewScreen(
+                        composedBitmap = state.composedBitmap,
+                        printerState = printerState,
+                        onPrintClicked = { copiesCount ->
+                            val bitmapToPrint = state.composedBitmap
+                            val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
+                            val totalWait = settings.printTimeoutSeconds * copiesCount
+
+                            if (settings.waitForPrinterFinish) {
+                                screenState = PhotoboothScreenState.Printing(
+                                    remainingSeconds = totalWait,
+                                    statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
+                                    isCompleted = false
+                                )
+
+                                scope.launch {
+                                    val printResult = printer.printDirect(
+                                        ip = settings.printerIp,
+                                        port = settings.printerPort,
+                                        jpegBytes = jpegBytes,
+                                        copies = copiesCount,
+                                        jobName = "Photobooth ${settings.eventTitle}"
+                                    )
+
+                                    if (printResult.isFailure) {
+                                        printer.printViaAndroidPrintManager(bitmapToPrint)
+                                    }
+
+                                    printer.waitForPrintCompletion(
+                                        ip = settings.printerIp,
+                                        port = settings.printerPort,
+                                        maxWaitSeconds = totalWait
+                                    ) { remaining, msg ->
+                                        screenState = PhotoboothScreenState.Printing(
+                                            remainingSeconds = remaining,
+                                            statusMessage = msg,
+                                            isCompleted = false
+                                        )
+                                    }
+
+                                    screenState = PhotoboothScreenState.Printing(
+                                        remainingSeconds = 0,
+                                        statusMessage = "Stampa completata ($copiesCount copie)!",
+                                        isCompleted = true
+                                    )
+
+                                    delay(4500)
+                                    screenState = PhotoboothScreenState.Idle
+                                }
+                            } else {
+                                scope.launch {
+                                    printer.printDirect(
+                                        ip = settings.printerIp,
+                                        port = settings.printerPort,
+                                        jpegBytes = jpegBytes,
+                                        copies = copiesCount
+                                    )
+                                    delay(2000)
+                                    screenState = PhotoboothScreenState.Idle
+                                }
+                            }
+                        },
+                        onRetakeClicked = {
                             screenState = PhotoboothScreenState.Countdown(
                                 shotIndex = 1,
                                 totalShots = settings.totalShots,
                                 remainingSeconds = settings.countdownSeconds
                             )
-                        } else {
-                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        },
+                        onHomeClicked = {
+                            screenState = PhotoboothScreenState.Idle
+                        },
+                        onTimeout = {
+                            screenState = PhotoboothScreenState.Idle
                         }
-                    },
-                    onToggleLayoutMode = { newMode ->
-                        val updated = settings.copy(layoutMode = newMode)
-                        settings = updated
-                        appSettings.saveSettings(updated)
-                    },
-                    onOpenSettings = {
-                        showSettingsDialog = true
-                    }
-                )
-            }
+                    )
+                }
 
-            is PhotoboothScreenState.Countdown -> {
-                CameraCaptureScreen(
-                    totalShots = settings.totalShots,
-                    countdownSeconds = settings.countdownSeconds,
-                    onSetFlashBrightness = onSetFlashBrightness,
-                    onAllShotsCaptured = { capturedBitmaps ->
-                        screenState = PhotoboothScreenState.Composing
-                        scope.launch {
-                            val sheetBitmap = PhotoStripComposer.createPrintSheet(
-                                context = context,
-                                photos = capturedBitmaps,
-                                settings = settings
-                            )
-                            screenState = PhotoboothScreenState.Preview(sheetBitmap)
-                        }
-                    },
-                    onCancel = {
-                        screenState = PhotoboothScreenState.Idle
-                    }
-                )
-            }
-
-            is PhotoboothScreenState.Composing -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color.Black),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFFE91E63))
-                    Text(
-                        text = "Elaborazione foto in corso...",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        modifier = Modifier.align(Alignment.BottomCenter)
+                is PhotoboothScreenState.Printing -> {
+                    PrintingScreen(
+                        remainingSeconds = state.remainingSeconds,
+                        totalTimeoutSeconds = settings.printTimeoutSeconds,
+                        statusMessage = state.statusMessage,
+                        isCompleted = state.isCompleted
                     )
                 }
             }
-
-            is PhotoboothScreenState.Preview -> {
-                PreviewScreen(
-                    composedBitmap = state.composedBitmap,
-                    printerState = printerState,
-                    onPrintClicked = { copiesCount ->
-                        val bitmapToPrint = state.composedBitmap
-                        val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
-                        val totalWait = settings.printTimeoutSeconds * copiesCount
-
-                        if (settings.waitForPrinterFinish) {
-                            screenState = PhotoboothScreenState.Printing(
-                                remainingSeconds = totalWait,
-                                statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
-                                isCompleted = false
-                            )
-
-                            scope.launch {
-                                val printResult = printer.printDirect(
-                                    ip = settings.printerIp,
-                                    port = settings.printerPort,
-                                    jpegBytes = jpegBytes,
-                                    copies = copiesCount,
-                                    jobName = "Photobooth ${settings.eventTitle}"
-                                )
-
-                                if (printResult.isFailure) {
-                                    printer.printViaAndroidPrintManager(bitmapToPrint)
-                                }
-
-                                printer.waitForPrintCompletion(
-                                    ip = settings.printerIp,
-                                    port = settings.printerPort,
-                                    maxWaitSeconds = totalWait
-                                ) { remaining, msg ->
-                                    screenState = PhotoboothScreenState.Printing(
-                                        remainingSeconds = remaining,
-                                        statusMessage = msg,
-                                        isCompleted = false
-                                    )
-                                }
-
-                                screenState = PhotoboothScreenState.Printing(
-                                    remainingSeconds = 0,
-                                    statusMessage = "Stampa completata ($copiesCount copie)!",
-                                    isCompleted = true
-                                )
-
-                                delay(4500)
-                                screenState = PhotoboothScreenState.Idle
-                            }
-                        } else {
-                            scope.launch {
-                                printer.printDirect(
-                                    ip = settings.printerIp,
-                                    port = settings.printerPort,
-                                    jpegBytes = jpegBytes,
-                                    copies = copiesCount
-                                )
-                                delay(2000)
-                                screenState = PhotoboothScreenState.Idle
-                            }
-                        }
-                    },
-                    onRetakeClicked = {
-                        screenState = PhotoboothScreenState.Countdown(
-                            shotIndex = 1,
-                            totalShots = settings.totalShots,
-                            remainingSeconds = settings.countdownSeconds
-                        )
-                    },
-                    onHomeClicked = {
-                        screenState = PhotoboothScreenState.Idle
-                    },
-                    onTimeout = {
-                        screenState = PhotoboothScreenState.Idle
-                    }
-                )
-            }
-
-            is PhotoboothScreenState.Printing -> {
-                PrintingScreen(
-                    remainingSeconds = state.remainingSeconds,
-                    totalTimeoutSeconds = settings.printTimeoutSeconds,
-                    statusMessage = state.statusMessage,
-                    isCompleted = state.isCompleted
-                )
-            }
         }
 
-        // Settings Dialog (Con password 3552)
+        // Dialog Impostazioni (Password protetta: 3552)
         if (showSettingsDialog) {
             SettingsDialog(
                 currentSettings = settings,

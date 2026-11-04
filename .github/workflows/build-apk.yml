@@ -38,19 +38,18 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.5
-        name: "Photobooth App v1.0.5 - Warm Flash, Multi-Copies, Custom Fonts & Dual BG"
+        tag_name: v1.0.6
+        name: "Photobooth App v1.0.6 - Formato A5, Home Monocromatica, Modalità Pausa & Palette"
         body: |
-          ### Photobooth Android v1.0.5 📸🖨️
+          ### Photobooth Android v1.0.6 📸🖨️
           
           Nuovi aggiornamenti:
-          - **Flash Bianco Caldo:** luce flash a schermo calda (tono caldo naturale) con scritta 'SORRIDI! 📸' in nero.
-          - **Scelta numero di copie:** selettore (1, 2, 3...) nell'anteprima prima della stampa con gestione coda adeguata.
-          - **Sfondi separati (4 FOTO e 1 FOTO):** caricamento indipendente con riempimento automatico.
-          - **Scelta font e opzione nascondi testo:** Playfair, Montserrat, Dancing Script, Cinzel e switch per nascondere il testo.
-          - **Titolo e pulsante 'TOCCA PER INIZIARE' ancora più grandi.**
-          - **Nuova password impostazioni: 3552.**
-          - **Scelta 4 FOTO e 1 FOTO senza emoji.**
+          - **Formato di Stampa A5 a 300 DPI:** il file di stampa è ora A5 (1748 x 2480 px verticale per 4 FOTO doppia striscia e 2480 x 1748 px orizzontale per 1 FOTO).
+          - **Nascondi Titolo solo su Foto:** l'opzione di nascondere il titolo si applica esclusivamente alla stampa; il nome dell'evento rimane sempre visibile nella Home dell'app.
+          - **Home Minimale Monocromatica:** grafica ad alto contrasto bianco e nero, icone pulite, pulsanti eleganti e minimali.
+          - **Modalità 'In Pausa':** attivabile da impostazioni. Mostra l'avviso a schermo intero *"Chiama un operatore per attivare il servizio"* e si sblocca inserendo il PIN (3552).
+          - **Palette Colori Sfondo e Testo:** selezione con palette di tinte unite curate ed elegante campo HEX personalizzato; testi su riga singola con auto-scaling per non troncare mai il testo.
+          - **Titolo Predefinito:** impostato su *"Photobooth"*.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
