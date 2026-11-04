@@ -31,7 +31,7 @@ data class SettingsData(
     val adminPin: String = "3552",              // Password di sicurezza: 3552
     val countdownSeconds: Int = 5,
     val waitForPrinterFinish: Boolean = true,
-    val printTimeoutSeconds: Int = 45,
+    val printTimeoutSeconds: Int = 30,
     val useDirectIpp: Boolean = true
 ) {
     val totalShots: Int
@@ -76,7 +76,7 @@ class AppSettings(context: Context) {
             adminPin = prefs.getString("admin_pin", "3552") ?: "3552",
             countdownSeconds = prefs.getInt("countdown_seconds", 5),
             waitForPrinterFinish = prefs.getBoolean("wait_for_printer", true),
-            printTimeoutSeconds = prefs.getInt("print_timeout", 45),
+            printTimeoutSeconds = prefs.getInt("print_timeout", 30),
             useDirectIpp = prefs.getBoolean("use_direct_ipp", true)
         )
     }

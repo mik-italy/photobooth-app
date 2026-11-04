@@ -189,7 +189,7 @@ fun MainPhotoboothScreen(
                                     )
 
                                     if (printResult.isFailure) {
-                                        printer.printViaAndroidPrintManager(bitmapToPrint)
+                                        android.util.Log.e("MainPhotobooth", "Stampa diretta IPP non riuscita: ${printResult.exceptionOrNull()?.message}")
                                     }
 
                                     printer.waitForPrintCompletion(

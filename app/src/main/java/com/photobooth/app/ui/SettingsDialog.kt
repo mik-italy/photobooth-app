@@ -213,7 +213,7 @@ fun SettingsDialog(
             adminPin = "3552",
             countdownSeconds = countdownSec.toIntOrNull() ?: 5,
             waitForPrinterFinish = waitForPrinter,
-            printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 45
+            printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 30
         )
         onSave(updated)
         onDismiss() // Chiude subito la schermata impostazioni
@@ -251,7 +251,7 @@ fun SettingsDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Inserisci il codice di sicurezza per accedere (3552)",
+                        text = "Inserisci il codice di sicurezza per accedere",
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.6f)
                     )

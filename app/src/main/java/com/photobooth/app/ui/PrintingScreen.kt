@@ -24,8 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.WarningAmber
@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,7 +51,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun PrintingScreen(
     remainingSeconds: Int,
-    totalTimeoutSeconds: Int = 45,
+    totalTimeoutSeconds: Int = 30,
     statusMessage: String,
     isCompleted: Boolean,
     onCancel: () -> Unit = {}
@@ -85,118 +86,101 @@ fun PrintingScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(horizontal = 40.dp)
         ) {
             if (!isCompleted) {
-                // Indicatore circolare minimale monocromatico
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(130.dp)
+                // Badge Superiore: "STAMPA IN CORSO"
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xFF141414),
+                    border = BorderStroke(1.dp, Color(0xFF262626)),
+                    modifier = Modifier.padding(bottom = 28.dp)
                 ) {
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.size(126.dp),
-                        color = Color.White,
-                        trackColor = Color(0xFF222222),
-                        strokeWidth = 6.dp
-                    )
-                    Icon(
-                        imageVector = if (isOfflineOrError) Icons.Default.WarningAmber else Icons.Default.Print,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(50.dp)
-                            .scale(pulseScale)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    text = if (isOfflineOrError) "STAMPANTE NON DISPONIBILE" else "STAMPA IN CORSO...",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = statusMessage.ifEmpty { "Invio alla Canon SELPHY CP1500..." },
-                    fontSize = 17.sp,
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Sublimazione termica Canon SELPHY (circa 45 sec per foglio)",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.45f),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // Passaggi monocromatici discreti (Giallo, Magenta, Ciano, Finitura)
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val passIndex = (progress * 4).toInt().coerceIn(0, 3)
-                    val passes = listOf("Giallo", "Magenta", "Ciano", "Lucido")
-
-                    passes.forEachIndexed { index, label ->
-                        val isActive = index <= passIndex
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(if (index == passIndex) 16.dp else 10.dp)
-                                    .background(
-                                        color = if (isActive) Color.White else Color(0xFF333333),
-                                        shape = CircleShape
-                                    )
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = label,
-                                fontSize = 11.sp,
-                                color = if (isActive) Color.White else Color.White.copy(alpha = 0.3f),
-                                fontWeight = if (index == passIndex) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isOfflineOrError) Icons.Default.WarningAmber else Icons.Default.Print,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isOfflineOrError) "ATTENZIONE STAMPANTE" else "STAMPA IN CORSO...",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // Titolo Principale Coinvolgente: "Preparatevi per la prossima foto!"
+                Text(
+                    text = "Preparatevi per la prossima foto!",
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
 
-                // Progress Bar monocromatica
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Sottotitolo: "Scegliete i gadget e mettetevi in posa!"
+                Text(
+                    text = "Scegliete i gadget e mettetevi in posa!",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(26.dp))
+
+                // Pillola Gadget Suggestiva
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF181818),
+                    border = BorderStroke(1.dp, Color(0xFF2A2A2A)),
+                    modifier = Modifier.padding(bottom = 30.dp)
+                ) {
+                    Text(
+                        text = "🕶️ Occhiali  •  🎩 Cappelli  •  ✨ Sorrisi pronti",
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                }
+
+                // Progress Bar Monocromatica
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
-                        .width(340.dp)
-                        .height(6.dp),
+                        .width(420.dp)
+                        .height(8.dp),
                     color = Color.White,
                     trackColor = Color(0xFF222222)
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Tempo residuo: ${remainingSeconds}s",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.45f)
+                    text = if (isOfflineOrError) {
+                        "Stampante non in linea (${statusMessage})"
+                    } else {
+                        "La foto sarà pronta tra circa ${remainingSeconds}s"
+                    },
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(34.dp))
 
-                // PULSANTE PER USCIRE SUBITO DALLA SCHERMATA DEI 45" SE OFFLINE O PER ANNULLARE
+                // Azione: Salta Attesa / Nuovo Scatto
                 if (isOfflineOrError) {
                     Button(
                         onClick = onCancel,
@@ -205,9 +189,7 @@ fun PrintingScreen(
                             containerColor = Color.White,
                             contentColor = Color.Black
                         ),
-                        modifier = Modifier
-                            .height(52.dp)
-                            .padding(horizontal = 16.dp)
+                        modifier = Modifier.height(52.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Home,
@@ -228,19 +210,23 @@ fun PrintingScreen(
                         onClick = onCancel,
                         shape = RoundedCornerShape(24.dp),
                         border = BorderStroke(1.dp, Color(0xFF333333)),
-                        modifier = Modifier.height(46.dp)
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier.height(48.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp)
+                            tint = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Annulla ed Esci",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 13.sp
+                            text = "Nuova Foto / Salta Attesa",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -265,18 +251,18 @@ fun PrintingScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = "STAMPA COMPLETATA",
-                            fontSize = 34.sp,
+                            text = "FOTO STAMPATA!",
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
                             letterSpacing = 2.sp
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Text(
-                            text = "Ritira la tua foto dalla stampante Canon SELPHY",
-                            fontSize = 18.sp,
+                            text = "Ritira la stampa dalla stampante Canon SELPHY!",
+                            fontSize = 19.sp,
                             color = Color.White.copy(alpha = 0.85f),
                             fontWeight = FontWeight.Medium
                         )
@@ -284,7 +270,7 @@ fun PrintingScreen(
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Text(
-                            text = "Ritorno automatico alla schermata iniziale...",
+                            text = "Pronti per il prossimo scatto...",
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.45f)
                         )

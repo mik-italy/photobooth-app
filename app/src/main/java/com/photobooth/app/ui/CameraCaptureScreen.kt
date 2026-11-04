@@ -15,6 +15,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -195,35 +196,36 @@ fun CameraCaptureScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // BUTTON: Return to Home Screen (Annulla e Torna alla Home)
+        // PULSANTE ANNULLA AL CENTRO IN BASSO
         Surface(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(20.dp)
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 28.dp)
                 .clickable {
                     isCancelled = true
                     onSetFlashBrightness(false)
                     onCancel()
                 },
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xAA000000)
+            color = Color(0xCC111111),
+            border = BorderStroke(1.dp, Color(0xFF333333))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Annulla",
                     tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Annulla e Torna alla Home",
+                    text = "Annulla",
                     color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -292,7 +294,7 @@ fun CameraCaptureScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = "$countdownValue",
-                            color = Color(0xFFFFD700),
+                            color = Color.White,
                             fontSize = 86.sp,
                             fontWeight = FontWeight.ExtraBold,
                             modifier = Modifier.scale(countdownScale)
@@ -303,7 +305,7 @@ fun CameraCaptureScreen(
         }
 
         // WARM WHITE SCREEN FLASH (Colore bianco caldo tipo 3200K per toni pelle ottimali)
-        // con SCRITTA "SORRIDI! 📸" IN NERO
+        // con SCRITTA "SORRIDI!" SENZA EMOJI IN NERO
         AnimatedVisibility(
             visible = isWhiteFlashActive,
             enter = fadeIn(animationSpec = tween(25)),
@@ -316,11 +318,11 @@ fun CameraCaptureScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "SORRIDI! 📸",
+                    text = "SORRIDI!",
                     color = Color.Black, // Scritta nera
-                    fontSize = 58.sp,
+                    fontSize = 62.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 3.sp
                 )
             }
         }

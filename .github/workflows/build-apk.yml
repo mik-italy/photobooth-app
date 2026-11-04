@@ -38,16 +38,17 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.7
-        name: "Photobooth App v1.0.7 - UI Monocromatica Elegante, Auto-Focus PIN, No Bordo Bianco & Uscita Stampa"
+        tag_name: v1.0.8
+        name: "Photobooth App v1.0.8 - Stampa Background 30s, Schermata Gadget, PIN Protetto & UI Scatto"
         body: |
-          ### Photobooth Android v1.0.7 📸🖨️
+          ### Photobooth Android v1.0.8 📸🖨️
           
           Nuovi aggiornamenti:
-          - **UI Elegante e Monocromatica Coordinata:** schermata di stampa, anteprima e cattura ridisegnate nello stesso stile pulito ed elegante della Home (nero profondo, bianco ad alto contrasto, icone e controlli minimali).
-          - **Apertura Immediata Tastiera PIN:** quando si apre il pannello impostazioni o si sblocca il photobooth dalla pausa, la tastiera numerica e il cursore si attivano all'istante senza dover cliccare il campo testo.
-          - **Nessun Bordo Bianco su Foto Singola:** rimosso il passepartout/bordo bianco sulla foto singola orizzontale A5; lo scatto poggia ora in modo pulito e diretto sul layout e sullo sfondo scelto.
-          - **Uscita Immediata da Schermata Stampa:** aggiunto il pulsante per uscire subito e tornare alla Home dalla schermata di stampa se la stampante è offline o se si desidera annullare l'attesa dei 45 secondi.
+          - **Stampa 100% Invisibile in Background:** rimossa ogni finestra o dialogo di sistema Android, il lavoro IPP viaggia in modo completamente trasparente.
+          - **Attesa Stampa Ridotta a 30s con Intrattenimento:** nuovo timer a 30 secondi con schermata di coinvolgimento: *"Preparatevi per la prossima foto! Scegliete i gadget e mettetevi in posa!"* e pulsante per passare subito al nuovo scatto.
+          - **Scritta Flash 'SORRIDI!':** rimossa l'emoji della fotocamera durante il flash bianco caldo.
+          - **Pulsante Annulla Centrato in Basso:** nella fotocamera il pulsante "Annulla" è ora posizionato al centro in basso per un facile accesso.
+          - **Codice PIN Nascosto:** eliminato ogni riferimento visivo al codice 3552 dall'interfaccia.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
