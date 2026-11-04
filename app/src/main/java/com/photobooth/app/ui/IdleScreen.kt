@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,9 +60,10 @@ fun IdleScreen(
     onToggleLayoutMode: (LayoutMode) -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    val playfairFont = remember {
+    // Playfair Display Bold Italic
+    val playfairBoldItalicFont = remember {
         try {
-            FontFamily(Font(R.font.playfair_display_bold, FontWeight.Bold))
+            FontFamily(Font(R.font.playfair_display_bold_italic, FontWeight.Bold, FontStyle.Italic))
         } catch (_: Exception) {
             FontFamily.Serif
         }
@@ -154,7 +156,7 @@ fun IdleScreen(
             )
         }
 
-        // Center Content (Title in Playfair Display - Large & Bold)
+        // Center Content (Title in Playfair Display Bold Italic - NOT UPPERCASE)
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -163,25 +165,26 @@ fun IdleScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = settings.eventTitle.uppercase(),
-                fontSize = 58.sp, // Made bigger as requested
+                text = settings.eventTitle, // Non maiuscolo come richiesto
+                fontSize = 62.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = playfairFont,
-                letterSpacing = 2.sp,
+                fontStyle = FontStyle.Italic,
+                fontFamily = playfairBoldItalicFont,
+                letterSpacing = 1.sp,
                 color = Color.White
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = settings.eventSubtitle.uppercase(),
+                text = settings.eventSubtitle,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Normal,
-                letterSpacing = 3.sp,
+                letterSpacing = 2.sp,
                 color = Color(0xFFFFD700)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(44.dp))
 
             // Main Start Button
             Button(
@@ -218,7 +221,7 @@ fun IdleScreen(
             }
         }
 
-        // BOTTOM SELECTOR (Doppia Striscia vs Foto Unica in basso, altro colore, senza testo helper)
+        // BOTTOM SELECTOR (Doppia Striscia vs Foto Unica in basso, colore blu indaco, nessun testo helper)
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -236,7 +239,7 @@ fun IdleScreen(
                     onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
                     label = { Text("🎞️ Doppia Striscia (4 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF3F51B5), // Distinct deep indigo/blue
+                        selectedContainerColor = Color(0xFF3F51B5),
                         selectedLabelColor = Color.White,
                         containerColor = Color(0x22FFFFFF),
                         labelColor = Color.White.copy(alpha = 0.7f)
@@ -250,7 +253,7 @@ fun IdleScreen(
                     onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
                     label = { Text("🖼️ Foto Unica Orizzontale (1 Foto)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF3F51B5), // Distinct deep indigo/blue
+                        selectedContainerColor = Color(0xFF3F51B5),
                         selectedLabelColor = Color.White,
                         containerColor = Color(0x22FFFFFF),
                         labelColor = Color.White.copy(alpha = 0.7f)

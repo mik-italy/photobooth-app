@@ -30,10 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,7 +60,7 @@ import java.util.concurrent.Executors
 @Composable
 fun CameraCaptureScreen(
     totalShots: Int = 4,
-    countdownSeconds: Int = 3,
+    countdownSeconds: Int = 5,
     onSetFlashBrightness: (Boolean) -> Unit,
     onAllShotsCaptured: (List<Bitmap>) -> Unit,
     onCancel: () -> Unit
@@ -91,12 +88,12 @@ fun CameraCaptureScreen(
             countdownValue--
         }
 
-        // 1. Activate Screen Flash at Max Brightness
+        // 1. ACTIVATE SCREEN FLASH AT MAX BRIGHTNESS
         onSetFlashBrightness(true)
         isWhiteFlashActive = true
 
-        // 2. Allow 250ms for exposure adaptation
-        delay(250)
+        // 2. Allow 300ms for illumination and auto-exposure
+        delay(300)
         if (isCancelled) {
             onSetFlashBrightness(false)
             isWhiteFlashActive = false
@@ -200,7 +197,7 @@ fun CameraCaptureScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // BUTTON: Return to Home Screen (Annulla / Torna alla Home)
+        // BUTTON: Return to Home Screen (Annulla e Torna alla Home)
         Surface(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -277,18 +274,18 @@ fun CameraCaptureScreen(
             }
         }
 
-        // Countdown Display
+        // Countdown Display (When > 0)
         val countdownScale by animateFloatAsState(
             targetValue = if (countdownValue > 0) 1.25f else 0.85f,
             animationSpec = tween(400),
             label = "countdownScale"
         )
 
-        Box(
-            modifier = Modifier.align(Alignment.Center),
-            contentAlignment = Alignment.Center
-        ) {
-            if (countdownValue > 0) {
+        if (countdownValue > 0 && !isWhiteFlashActive) {
+            Box(
+                modifier = Modifier.align(Alignment.Center),
+                contentAlignment = Alignment.Center
+            ) {
                 Surface(
                     shape = CircleShape,
                     color = Color(0x77000000),
@@ -304,27 +301,29 @@ fun CameraCaptureScreen(
                         )
                     }
                 }
-            } else {
-                Text(
-                    text = "SORRIDI! 📸",
-                    color = Color.White,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Black
-                )
             }
         }
 
-        // Screen White Flash
+        // INTERNAL WHITE FLASH WITH BLACK "SORRIDI! 📸" TEXT
         AnimatedVisibility(
             visible = isWhiteFlashActive,
-            enter = fadeIn(animationSpec = tween(30)),
+            enter = fadeIn(animationSpec = tween(25)),
             exit = fadeOut(animationSpec = tween(200))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
-            )
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "SORRIDI! 📸",
+                    color = Color.Black, // Scritta nera su fondo bianco flash
+                    fontSize = 58.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+            }
         }
     }
 }

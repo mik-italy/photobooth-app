@@ -38,19 +38,17 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.3
-        name: "Photobooth App v1.0.3 - Playfair Font, Custom BG, Full Landscape Photo & 5s Timer"
+        tag_name: v1.0.4
+        name: "Photobooth App v1.0.4 - Playfair Bold Italic, Custom BG Scaling & Contrast"
         body: |
-          ### Photobooth Android v1.0.3 📸🖨️
+          ### Photobooth Android v1.0.4 📸🖨️
           
-          Nuove funzionalità e miglioramenti grafici:
-          - **Font Playfair Display:** titolo dell'evento reso più grande ed elegante con font Playfair Display sia a schermo che sulla stampa.
-          - **4 Foto con massimo spazio verticale:** le foto ora occupano oltre l'85% della striscia, con un footer compatto ed elegante.
-          - **Foto Unica Orizzontale (10x15):** stampa a tutto foglio orizzontale con cornice d'autore intorno.
-          - **Caricamento immagine di sfondo:** possibilità di caricare una propria immagine/grafica di sfondo dal tablet tramite il selettore nelle impostazioni.
-          - **Selettore in basso e nuovo colore:** selettore di formato spostato in fondo alla home con design dedicato e testo guida nascosto.
-          - **Timer predefinito a 5 secondi.**
-          - **Tasto 'Torna alla Home' nell'anteprima:** per annullare e resettare la postazione senza stampare.
+          Nuovi aggiornamenti:
+          - **Font Playfair Display Bold Italic:** titolo formattato in Playfair Display Bold Italic rispettando esattamente le maiuscole/minuscole inserite (non forzato in maiuscolo).
+          - **Proporzioni e Adattamento Immagine di Sfondo:** scelta tra Ritaglio Centrato (Center Crop), Riempi (Fit XY) e Mantieni Proporzioni (Fit Center).
+          - **Contrasto e Personalizzazione Testo:** scelta colore testo, dimensione font e ombra/halo di contrasto automatica per garantire perfetta leggibilità su qualunque sfondo.
+          - **Scritta 'SORRIDI! 📸' Nera durante il flash:** chiaramente visibile in nero al centro dello schermo mentre è attivo il flash bianco a massima luminosità.
+          - **Rimossa scritta Photobooth:** eliminate le diciture "photobooth" in calce alla stampa per un layout 100% pulito e personalizzato.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

@@ -24,9 +24,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoAlbum
@@ -65,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.photobooth.app.data.BgScaleMode
 import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
@@ -91,7 +94,9 @@ fun SettingsDialog(
     var layoutMode by remember { mutableStateOf(currentSettings.layoutMode) }
     var stripBgColor by remember { mutableStateOf(currentSettings.stripBackgroundColor) }
     var stripTextColor by remember { mutableStateOf(currentSettings.stripTextColor) }
+    var titleFontSize by remember { mutableStateOf(currentSettings.titleFontSize.toString()) }
     var customBgPath by remember { mutableStateOf(currentSettings.customBgImagePath) }
+    var bgScaleMode by remember { mutableStateOf(currentSettings.bgScaleMode) }
     var countdownSec by remember { mutableStateOf(currentSettings.countdownSeconds.toString()) }
     var waitForPrinter by remember { mutableStateOf(currentSettings.waitForPrinterFinish) }
     var timeoutSec by remember { mutableStateOf(currentSettings.printTimeoutSeconds.toString()) }
@@ -117,7 +122,7 @@ fun SettingsDialog(
                 customBgPath = targetFile.absolutePath
                 Toast.makeText(context, "Immagine di sfondo caricata!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(context, "Errore caricamento immagine: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Errore caricamento: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -132,7 +137,9 @@ fun SettingsDialog(
             layoutMode = layoutMode,
             stripBackgroundColor = stripBgColor,
             stripTextColor = stripTextColor,
+            titleFontSize = titleFontSize.toIntOrNull() ?: 46,
             customBgImagePath = customBgPath,
+            bgScaleMode = bgScaleMode,
             countdownSeconds = countdownSec.toIntOrNull() ?: 5,
             waitForPrinterFinish = waitForPrinter,
             printTimeoutSeconds = timeoutSec.toIntOrNull() ?: 45
@@ -234,12 +241,12 @@ fun SettingsDialog(
 
                 Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
 
-                // SECTION 2: Grafica Personalizzata & Sfondo
+                // SECTION 2: Testi, Font Playfair Bold Italic, Dimensioni e Colori
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Palette, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "TESTI, COLORI E SFONDO IMMAGINE",
+                        text = "TESTI, FONT E COLORI",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700)
@@ -250,7 +257,7 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = eventTitle,
                     onValueChange = { eventTitle = it },
-                    label = { Text("Titolo Evento (in font elegante Playfair Display)") },
+                    label = { Text("Titolo Evento (Playfair Bold Italic - maiuscole/minuscole libere)") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -265,7 +272,7 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = eventSubtitle,
                     onValueChange = { eventSubtitle = it },
-                    label = { Text("Data / Luogo (es. 15 LUGLIO 2026)") },
+                    label = { Text("Data / Luogo (es. 15 Luglio 2026)") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -277,9 +284,88 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // CARICAMENTO IMMAGINE DI SFONDO
-                Text("Immagine di Sfondo per la Stampa:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                // Dimensione Font Titolo & Contrasto
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = titleFontSize,
+                        onValueChange = { titleFontSize = it },
+                        label = { Text("Dimensione Font Titolo (default 46)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color(0xFF2C2C34),
+                            unfocusedContainerColor = Color(0xFF2C2C34)
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1.2f)) {
+                        Text("Contrasto Testo:", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = "Viene applicata automaticamente un'ombra a contrasto per garantire la massima leggibilità su qualsiasi foto/sfondo.",
+                            color = Color(0xFFFFD700),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Colore del Testo
+                Text("Colore del Testo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val textColors = listOf(
+                        "#181818" to "Nero",
+                        "#FFFFFF" to "Bianco",
+                        "#D4AF37" to "Oro",
+                        "#1A237E" to "Blu Notte",
+                        "#E91E63" to "Rosa"
+                    )
+                    textColors.forEach { (hex, label) ->
+                        val isSelected = stripTextColor.equals(hex, ignoreCase = true)
+                        val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.Black }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .border(
+                                        width = if (isSelected) 3.dp else 1.dp,
+                                        color = if (isSelected) Color(0xFF00E676) else Color.Gray,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { stripTextColor = hex }
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(label, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
+                        }
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
+
+                // SECTION 3: Sfondo Immagine & Proporzioni
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AspectRatio, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "IMMAGINE DI SFONDO & PROPORZIONE",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700)
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -307,53 +393,48 @@ fun SettingsDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                if (customBgPath != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Proporzione / Adattamento Immagine di Sfondo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                // Colore Sfondo Predefinito
-                Text("Oppure scegli Colore Sfondo Tinta Unita:", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val bgOptions = listOf(
-                        "#FFFFFF" to "Bianco",
-                        "#181818" to "Nero",
-                        "#FDFBF7" to "Crema",
-                        "#FCE4EC" to "Rosa"
-                    )
-                    bgOptions.forEach { (hex, label) ->
-                        val isSelected = stripBgColor.equals(hex, ignoreCase = true) && customBgPath == null
-                        val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.White }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .border(
-                                        width = if (isSelected) 3.dp else 1.dp,
-                                        color = if (isSelected) Color(0xFFE91E63) else Color.Gray,
-                                        shape = CircleShape
-                                    )
-                                    .clickable {
-                                        stripBgColor = hex
-                                        if (hex == "#181818") {
-                                            stripTextColor = "#FFFFFF"
-                                        } else {
-                                            stripTextColor = "#181818"
-                                        }
-                                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = bgScaleMode == BgScaleMode.CENTER_CROP,
+                            onClick = { bgScaleMode = BgScaleMode.CENTER_CROP },
+                            label = { Text("Ritaglio Centrato (Copre tutto)", fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFE91E63),
+                                selectedLabelColor = Color.White
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(label, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
-                        }
+                        )
+                        FilterChip(
+                            selected = bgScaleMode == BgScaleMode.FIT_XY,
+                            onClick = { bgScaleMode = BgScaleMode.FIT_XY },
+                            label = { Text("Riempi / Fit XY", fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFE91E63),
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                        FilterChip(
+                            selected = bgScaleMode == BgScaleMode.FIT_CENTER,
+                            onClick = { bgScaleMode = BgScaleMode.FIT_CENTER },
+                            label = { Text("Mantieni Proporzioni", fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFE91E63),
+                                selectedLabelColor = Color.White
+                            )
+                        )
                     }
                 }
 
                 Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
 
-                // SECTION 3: Canon SELPHY Printer
+                // SECTION 4: Canon SELPHY Printer
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Print, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
