@@ -3,9 +3,10 @@ name: Build Photobooth APK
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -23,7 +24,7 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
+      run: chmod +x gradlew
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
@@ -33,3 +34,22 @@ jobs:
       with:
         name: PhotoboothApp-Debug-APK
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Create GitHub Release with APK
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0.0
+        name: "Photobooth App v1.0.0 - Canon SELPHY CP1500"
+        body: |
+          ### Photobooth Android APK pronto all'installazione! 📸🖨️
+          
+          Scarica il file `app-debug.apk` direttamente sul tuo tablet Android per installare l'applicazione.
+          
+          - **Stampante:** Canon SELPHY CP1500 (Wi-Fi Direct o rete locale)
+          - **Formato:** Striscia doppia 2x6 pollici su 10x15 cm
+          - **Gestione coda:** Blocco intelligente schermo durante la stampa
+        draft: false
+        prerelease: false
+        files: app/build/outputs/apk/debug/app-debug.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
