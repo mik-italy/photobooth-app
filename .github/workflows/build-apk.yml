@@ -38,15 +38,16 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.9
-        name: "Photobooth App v1.0.9 - Timer 40s, Testi Attesa Animati & Stampa 10x15 Senza Bordi Bianchi"
+        tag_name: v1.1.0
+        name: "Photobooth App v1.1.0 - Default IP 192.168.0.1, Maxi Testi Attesa, Pulsanti Grandi & No Testo Foto Default"
         body: |
-          ### Photobooth Android v1.0.9 📸🖨️
+          ### Photobooth Android v1.1.0 📸🖨️
           
           Nuovi aggiornamenti:
-          - **Timer di Stampa a 40 Secondi:** attesa impostata a 40s per copia per rispecchiare con precisione la velocità del ciclo termico della Canon SELPHY.
-          - **Testi di Attesa Dinamici e Animati:** messaggi rotanti animati ogni 7 secondi per intrattenere gli ospiti (*"Preparatevi per la prossima foto!"*, *"Cercate il vostro look perfetto!"*, *"Chi farà la posa più divertente?"*, *"La stampante sta sfornando il vostro ricordo!"*).
-          - **Eliminazione Bordi Bianchi Laterali:** risoluzione e proporzioni del file allineate al formato nativo 10x15cm (1200 x 1800 px a 300 DPI) con comando IPP `print-scaling: fill` (stampa al vivo senza bordi) e sfondo disegnato a filo margine assoluto.
+          - **IP Default Canon 192.168.0.1:** indirizzo IP predefinito aggiornato a `192.168.0.1`.
+          - **Maxi Testi di Attesa Stampa:** messaggi di intrattenimento in stampa ingranditi (66sp, grande formato come il titolo 'Photobooth' della Home) con sottotitoli e suggerimenti accessori ben visibili a distanza.
+          - **Comandi 'Rifai' e 'Torna alla Home' Ingranditi:** pulsanti nell'anteprima foto ora grandi 66dp con caratteri evidenti (18sp Bold) esattamente come il pulsante principale di stampa.
+          - **Testo Sotto Foto Disattivato di Default:** sulle stampe il testo personalizzato è ora disattivato di base (può sempre essere riattivato da Impostazioni, mentre nella Home rimane sempre visibile).
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

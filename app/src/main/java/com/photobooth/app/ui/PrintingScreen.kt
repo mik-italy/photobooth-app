@@ -175,51 +175,53 @@ fun PrintingScreen(
                     val msg = distractionMessages[index]
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     ) {
                         Text(
                             text = msg.title,
-                            fontSize = 38.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 66.sp, // BELLO GRANDE COME LA SCRITTA PHOTOBOOTH IN HOME
+                            fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 74.sp
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
                         Text(
                             text = msg.subtitle,
-                            fontSize = 24.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 36.sp
                         )
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
 
                         Surface(
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(26.dp),
                             color = Color(0xFF181818),
-                            border = BorderStroke(1.dp, Color(0xFF2A2A2A))
+                            border = BorderStroke(1.dp, Color(0xFF333333))
                         ) {
                             Text(
                                 text = msg.hint,
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 16.sp,
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 20.sp,
+                                modifier = Modifier.padding(horizontal = 32.dp, vertical = 14.dp)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(34.dp))
 
                 // Progress Bar Monocromatica
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
-                        .width(420.dp)
-                        .height(8.dp),
+                        .width(520.dp)
+                        .height(10.dp),
                     color = Color.White,
                     trackColor = Color(0xFF222222)
                 )
@@ -232,12 +234,12 @@ fun PrintingScreen(
                     } else {
                         "La foto sarà pronta tra circa ${remainingSeconds}s"
                     },
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 16.sp,
+                    color = Color.White.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 // Azione: Salta Attesa / Nuovo Scatto
                 if (isOfflineOrError) {

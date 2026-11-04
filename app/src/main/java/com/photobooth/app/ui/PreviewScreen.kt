@@ -232,8 +232,8 @@ fun PreviewScreen(
                 enabled = !isPrinterBusy,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(68.dp),
-                shape = RoundedCornerShape(34.dp),
+                    .height(66.dp),
+                shape = RoundedCornerShape(33.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color.Black,
@@ -261,14 +261,14 @@ fun PreviewScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Pulsante Rifai gli Scatti
+            // Pulsante Rifai gli Scatti (Grande come Stampa)
             OutlinedButton(
                 onClick = onRetakeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, Color(0xFF333333)),
+                    .height(66.dp),
+                shape = RoundedCornerShape(33.dp),
+                border = BorderStroke(2.dp, Color(0xFF444444)),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color.White
                 )
@@ -277,46 +277,48 @@ fun PreviewScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White.copy(alpha = 0.85f)
+                        modifier = Modifier.size(26.dp),
+                        tint = Color.White
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Rifai gli scatti",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.85f)
+                        text = "RIFAI GLI SCATTI",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = Color.White
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Pulsante Torna alla Home
+            // Pulsante Torna alla Home (Grande come Stampa)
             OutlinedButton(
                 onClick = onHomeClicked,
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, Color(0xFF262626)),
+                    .height(66.dp),
+                shape = RoundedCornerShape(33.dp),
+                border = BorderStroke(2.dp, Color(0xFF333333)),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White.copy(alpha = 0.7f)
+                    contentColor = Color.White
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Home,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White.copy(alpha = 0.6f)
+                        modifier = Modifier.size(26.dp),
+                        tint = Color.White.copy(alpha = 0.85f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Torna alla Home",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.White.copy(alpha = 0.6f)
+                        text = "TORNA ALLA HOME",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = Color.White.copy(alpha = 0.85f)
                     )
                 }
             }

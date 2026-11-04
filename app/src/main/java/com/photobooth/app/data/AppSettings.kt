@@ -16,10 +16,10 @@ enum class FontChoice {
 }
 
 data class SettingsData(
-    val printerIp: String = "192.168.4.1",
+    val printerIp: String = "192.168.0.1",      // Default IP Canon: 192.168.0.1
     val printerPort: Int = 631,
     val eventTitle: String = "Photobooth",      // Default: Photobooth
-    val showTitleOnPrints: Boolean = true,      // Nascondi SOLO sulle foto, visibile in home
+    val showTitleOnPrints: Boolean = false,     // Default: disattivato sotto le foto (sempre visibile in Home)
     val fontChoice: FontChoice = FontChoice.PLAYFAIR,
     val layoutMode: LayoutMode = LayoutMode.STRIP_4_PHOTOS,
     val stripBackgroundColor: String = "#FFFFFF",
@@ -61,10 +61,10 @@ class AppSettings(context: Context) {
         }
 
         return SettingsData(
-            printerIp = prefs.getString("printer_ip", "192.168.4.1") ?: "192.168.4.1",
+            printerIp = prefs.getString("printer_ip", "192.168.0.1") ?: "192.168.0.1",
             printerPort = prefs.getInt("printer_port", 631),
             eventTitle = prefs.getString("event_title", "Photobooth") ?: "Photobooth",
-            showTitleOnPrints = prefs.getBoolean("show_title_on_prints", true),
+            showTitleOnPrints = prefs.getBoolean("show_title_on_prints", false),
             fontChoice = font,
             layoutMode = mode,
             stripBackgroundColor = prefs.getString("strip_bg_color", "#FFFFFF") ?: "#FFFFFF",
