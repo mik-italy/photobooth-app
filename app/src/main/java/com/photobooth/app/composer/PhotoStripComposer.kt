@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
+import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import java.io.ByteArrayOutputStream
 
@@ -19,11 +20,24 @@ object PhotoStripComposer {
     const val STRIP_WIDTH = SHEET_WIDTH / 2 // 600 px each
 
     /**
-     * Composes 3 captured bitmaps into a double 2x6 strip on a 4x6" canvas.
-     * The strip layout is customized according to [settings] and duplicated identically
-     * across both strips (left and right).
+     * Composes captured bitmaps according to the selected LayoutMode:
+     * - STRIP_4_PHOTOS: 4 photos duplicated onto two 2x6 strips.
+     * - SINGLE_PHOTO: 1 full photo on 10x15 cm sheet.
      */
-    fun createDoubleStrip(
+    fun createPrintSheet(
+        photos: List<Bitmap>,
+        settings: SettingsData
+    ): Bitmap {
+        return when (settings.layoutMode) {
+            LayoutMode.STRIP_4_PHOTOS -> createDoubleStripWith4Photos(photos, settings)
+            LayoutMode.SINGLE_PHOTO -> createSingleFullPhoto(photos.firstOrNull(), settings)
+        }
+    }
+
+    /**
+     * 4-Photo Double Strip (2x6") on 4x6" canvas.
+     */
+    private fun createDoubleStripWith4Photos(
         photos: List<Bitmap>,
         settings: SettingsData
     ): Bitmap {
@@ -36,55 +50,45 @@ object PhotoStripComposer {
             Color.WHITE
         }
 
-        // Fill background
         canvas.drawColor(bgColor)
 
-        // Draw Strip 1 (Left column: offset X = 0)
-        drawSingleStrip(canvas, photos, settings, offsetX = 0f)
+        // Draw Strip 1 (Left column)
+        drawStrip4Photos(canvas, photos, settings, offsetX = 0f)
 
-        // Duplicate identical graphics to Strip 2 (Right column: offset X = STRIP_WIDTH)
-        drawSingleStrip(canvas, photos, settings, offsetX = STRIP_WIDTH.toFloat())
+        // Duplicate identically to Strip 2 (Right column)
+        drawStrip4Photos(canvas, photos, settings, offsetX = STRIP_WIDTH.toFloat())
 
-        // Draw central dotted cut guide line
-        val cutLineColor = if (isDarkColor(bgColor)) Color.rgb(80, 80, 80) else Color.rgb(210, 210, 210)
+        // Subtle center dotted line only (NO scissors symbol)
+        val cutLineColor = if (isDarkColor(bgColor)) Color.rgb(80, 80, 80) else Color.rgb(215, 215, 215)
         val cutLinePaint = Paint().apply {
             color = cutLineColor
             strokeWidth = 2f
             style = Paint.Style.STROKE
-            pathEffect = DashPathEffect(floatArrayOf(15f, 15f), 0f)
+            pathEffect = DashPathEffect(floatArrayOf(14f, 14f), 0f)
+            isAntiAlias = true
         }
         canvas.drawLine(
             STRIP_WIDTH.toFloat(),
-            30f,
+            20f,
             STRIP_WIDTH.toFloat(),
-            (SHEET_HEIGHT - 30).toFloat(),
+            (SHEET_HEIGHT - 20).toFloat(),
             cutLinePaint
         )
-
-        // Guide scissors icon
-        val scissorsPaint = Paint().apply {
-            color = cutLineColor
-            textSize = 24f
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-        }
-        canvas.drawText("✂", STRIP_WIDTH.toFloat(), 25f, scissorsPaint)
-        canvas.drawText("✂", STRIP_WIDTH.toFloat(), SHEET_HEIGHT - 10f, scissorsPaint)
 
         return sheetBitmap
     }
 
-    private fun drawSingleStrip(
+    private fun drawStrip4Photos(
         canvas: Canvas,
         photos: List<Bitmap>,
         settings: SettingsData,
         offsetX: Float
     ) {
-        val photoMarginX = 45f
-        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 510 px
-        val photoHeight = 380f
-        val topMargin = 55f
-        val spacing = 28f
+        val photoMarginX = 42f
+        val photoWidth = STRIP_WIDTH - (photoMarginX * 2) // 516 px
+        val photoHeight = 300f // 4 photos
+        val topMargin = 40f
+        val spacing = 18f
 
         val bgColor = try {
             Color.parseColor(settings.stripBackgroundColor)
@@ -99,10 +103,9 @@ object PhotoStripComposer {
             if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
         }
 
-        val secondaryTextColor = if (isDark) Color.rgb(200, 200, 200) else Color.rgb(110, 110, 110)
-        val borderColor = if (isDark) Color.rgb(60, 60, 60) else Color.rgb(220, 220, 220)
+        val secondaryTextColor = if (isDark) Color.rgb(200, 200, 200) else Color.rgb(115, 115, 115)
+        val borderColor = if (isDark) Color.rgb(65, 65, 65) else Color.rgb(225, 225, 225)
 
-        // Photo slot borders
         val borderPaint = Paint().apply {
             color = borderColor
             style = Paint.Style.STROKE
@@ -110,8 +113,8 @@ object PhotoStripComposer {
             isAntiAlias = true
         }
 
-        // Draw the 3 photos
-        for (i in 0 until 3) {
+        // Draw the 4 photos
+        for (i in 0 until 4) {
             val photoTop = topMargin + (i * (photoHeight + spacing))
             val photoRect = RectF(
                 offsetX + photoMarginX,
@@ -121,8 +124,7 @@ object PhotoStripComposer {
             )
 
             if (i < photos.size) {
-                val srcBitmap = photos[i]
-                drawCenterCropBitmap(canvas, srcBitmap, photoRect)
+                drawCenterCropBitmap(canvas, photos[i], photoRect)
             } else {
                 val placeholderPaint = Paint().apply {
                     color = if (isDark) Color.rgb(40, 40, 40) else Color.rgb(245, 245, 245)
@@ -134,50 +136,118 @@ object PhotoStripComposer {
             canvas.drawRect(photoRect, borderPaint)
         }
 
-        // Footer Area
-        val footerTop = topMargin + (3 * (photoHeight + spacing)) + 20f
+        // Footer Area (Begins after the 4th photo)
+        val footerTop = topMargin + (4 * (photoHeight + spacing)) + 15f
         val footerCenterX = offsetX + (STRIP_WIDTH / 2f)
 
-        // Event Title
+        // Event Title (Bold, Serif)
         val titlePaint = Paint().apply {
             color = primaryTextColor
-            textSize = 42f
+            textSize = 38f
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
             letterSpacing = 0.08f
         }
-        canvas.drawText(settings.eventTitle.uppercase(), footerCenterX, footerTop + 60f, titlePaint)
+        canvas.drawText(settings.eventTitle.uppercase(), footerCenterX, footerTop + 55f, titlePaint)
 
-        // Decorative separator line or hashtag
-        val starPaint = Paint().apply {
-            color = Color.rgb(212, 175, 55) // Gold
-            textSize = 26f
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-        }
-        canvas.drawText(settings.eventHashtag, footerCenterX, footerTop + 115f, starPaint)
-
-        // Event Subtitle / Date
+        // Event Subtitle / Date (No separator/hashtag as requested)
         val subtitlePaint = Paint().apply {
             color = secondaryTextColor
-            textSize = 28f
+            textSize = 26f
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
             letterSpacing = 0.05f
         }
-        canvas.drawText(settings.eventSubtitle, footerCenterX, footerTop + 175f, subtitlePaint)
+        canvas.drawText(settings.eventSubtitle, footerCenterX, footerTop + 115f, subtitlePaint)
 
-        // Subtle photobooth label
+        // Subtle watermark
         val watermarkPaint = Paint().apply {
-            color = if (isDark) Color.rgb(100, 100, 100) else Color.rgb(180, 180, 180)
-            textSize = 17f
+            color = if (isDark) Color.rgb(90, 90, 90) else Color.rgb(180, 180, 180)
+            textSize = 16f
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.ITALIC)
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
         }
-        canvas.drawText("PHOTOBOOTH", footerCenterX, footerTop + 240f, watermarkPaint)
+        canvas.drawText("PHOTOBOOTH", footerCenterX, footerTop + 175f, watermarkPaint)
+    }
+
+    /**
+     * Single Full Photo (10x15 cm / Postcard) layout with custom footer.
+     */
+    private fun createSingleFullPhoto(
+        photo: Bitmap?,
+        settings: SettingsData
+    ): Bitmap {
+        val sheetBitmap = Bitmap.createBitmap(SHEET_WIDTH, SHEET_HEIGHT, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(sheetBitmap)
+
+        val bgColor = try {
+            Color.parseColor(settings.stripBackgroundColor)
+        } catch (_: Exception) {
+            Color.WHITE
+        }
+        val isDark = isDarkColor(bgColor)
+
+        canvas.drawColor(bgColor)
+
+        val margin = 50f
+        val photoWidth = SHEET_WIDTH - (margin * 2) // 1100 px
+        val photoHeight = 1420f
+
+        val photoRect = RectF(margin, margin, margin + photoWidth, margin + photoHeight)
+
+        if (photo != null) {
+            drawCenterCropBitmap(canvas, photo, photoRect)
+        } else {
+            val placeholderPaint = Paint().apply {
+                color = if (isDark) Color.rgb(40, 40, 40) else Color.rgb(240, 240, 240)
+            }
+            canvas.drawRect(photoRect, placeholderPaint)
+        }
+
+        // Photo border
+        val borderPaint = Paint().apply {
+            color = if (isDark) Color.rgb(65, 65, 65) else Color.rgb(220, 220, 220)
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+            isAntiAlias = true
+        }
+        canvas.drawRect(photoRect, borderPaint)
+
+        // Footer Area
+        val footerTop = margin + photoHeight + 30f
+        val centerX = SHEET_WIDTH / 2f
+
+        val primaryTextColor = try {
+            Color.parseColor(settings.stripTextColor)
+        } catch (_: Exception) {
+            if (isDark) Color.WHITE else Color.rgb(25, 25, 25)
+        }
+        val secondaryTextColor = if (isDark) Color.rgb(200, 200, 200) else Color.rgb(115, 115, 115)
+
+        val titlePaint = Paint().apply {
+            color = primaryTextColor
+            textSize = 52f
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+            letterSpacing = 0.08f
+        }
+        canvas.drawText(settings.eventTitle.uppercase(), centerX, footerTop + 65f, titlePaint)
+
+        val subtitlePaint = Paint().apply {
+            color = secondaryTextColor
+            textSize = 32f
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+            letterSpacing = 0.05f
+        }
+        canvas.drawText(settings.eventSubtitle, centerX, footerTop + 130f, subtitlePaint)
+
+        return sheetBitmap
     }
 
     private fun drawCenterCropBitmap(canvas: Canvas, source: Bitmap, destRect: RectF) {

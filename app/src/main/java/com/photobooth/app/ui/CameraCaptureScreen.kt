@@ -16,6 +16,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,7 +62,7 @@ import java.util.concurrent.Executors
 
 @Composable
 fun CameraCaptureScreen(
-    totalShots: Int = 3,
+    totalShots: Int = 4,
     countdownSeconds: Int = 3,
     onSetFlashBrightness: (Boolean) -> Unit,
     onAllShotsCaptured: (List<Bitmap>) -> Unit,
@@ -67,27 +74,36 @@ fun CameraCaptureScreen(
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
-    var currentShotIndex by remember { mutableIntStateOf(1) } // 1..3
+    var currentShotIndex by remember { mutableIntStateOf(1) }
     var countdownValue by remember { mutableIntStateOf(countdownSeconds) }
     var isWhiteFlashActive by remember { mutableStateOf(false) }
+    var isCancelled by remember { mutableStateOf(false) }
     val capturedBitmaps = remember { mutableListOf<Bitmap>() }
 
     // Start countdown and capture loop
-    LaunchedEffect(currentShotIndex) {
+    LaunchedEffect(currentShotIndex, isCancelled) {
+        if (isCancelled) return@LaunchedEffect
+
         countdownValue = countdownSeconds
         while (countdownValue > 0) {
             delay(1000)
+            if (isCancelled) return@LaunchedEffect
             countdownValue--
         }
 
-        // 1. ACTIVATE SCREEN FLASH AT MAX BRIGHTNESS
+        // 1. Activate Screen Flash at Max Brightness
         onSetFlashBrightness(true)
         isWhiteFlashActive = true
 
-        // 2. Allow 250ms for screen backlight and auto-exposure to illuminate subject
+        // 2. Allow 250ms for exposure adaptation
         delay(250)
+        if (isCancelled) {
+            onSetFlashBrightness(false)
+            isWhiteFlashActive = false
+            return@LaunchedEffect
+        }
 
-        // 3. Capture photo
+        // 3. Take Picture
         imageCapture?.let { capture ->
             capture.takePicture(
                 cameraExecutor,
@@ -99,7 +115,6 @@ fun CameraCaptureScreen(
 
                         capturedBitmaps.add(bitmap)
 
-                        // 4. RESTORE NORMAL BRIGHTNESS
                         onSetFlashBrightness(false)
                         isWhiteFlashActive = false
 
@@ -162,7 +177,6 @@ fun CameraCaptureScreen(
 
                         imageCapture = capture
 
-                        // Front camera for photobooth selfie experience, fallback to back
                         val cameraSelector = if (cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
                             CameraSelector.DEFAULT_FRONT_CAMERA
                         } else {
@@ -186,16 +200,49 @@ fun CameraCaptureScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        // BUTTON: Return to Home Screen (Annulla / Torna alla Home)
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(20.dp)
+                .clickable {
+                    isCancelled = true
+                    onSetFlashBrightness(false)
+                    onCancel()
+                },
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xAA000000)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Annulla",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Annulla e Torna alla Home",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
         // Top Status Bar: Shot progress
         Surface(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 24.dp),
+                .padding(top = 20.dp),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0x99000000)
+            color = Color(0xAA000000)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 for (i in 1..totalShots) {
@@ -222,9 +269,9 @@ fun CameraCaptureScreen(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Text(
-                    text = "Foto $currentShotIndex di $totalShots",
+                    text = if (totalShots > 1) "Foto $currentShotIndex di $totalShots" else "Scatto Singolo",
                     color = Color.White,
-                    fontSize = 18.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -267,7 +314,7 @@ fun CameraCaptureScreen(
             }
         }
 
-        // INTERNAL SCREEN WHITE FLASH (Covers the entire screen with pure white at 100% brightness)
+        // Screen White Flash
         AnimatedVisibility(
             visible = isWhiteFlashActive,
             enter = fadeIn(animationSpec = tween(30)),
@@ -316,7 +363,6 @@ private fun imageProxyToBitmap(image: ImageProxy, rotationDegrees: Int): Bitmap 
     if (rotationDegrees != 0 && bitmap != null) {
         val matrix = Matrix()
         matrix.postRotate(rotationDegrees.toFloat())
-        // Mirror horizontally so front selfie camera feels like a mirror
         matrix.postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
         bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }

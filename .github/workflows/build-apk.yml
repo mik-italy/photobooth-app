@@ -38,16 +38,19 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.1
-        name: "Photobooth App v1.0.1 - Lenovo Tab M11 & Landscape Flash Fix"
+        tag_name: v1.0.2
+        name: "Photobooth App v1.0.2 - 4 Photos Strip, Full Photo Mode & UI Improvements"
         body: |
-          ### Photobooth Android v1.0.1 📸🖨️
+          ### Photobooth Android v1.0.2 📸🖨️
           
-          Aggiornamento con ottimizzazioni per Lenovo Tab M11:
-          - **Fix avvio / crash startup:** tema Material standard e gestione sicura DecorView / Insets.
-          - **Interfaccia orizzontale fissa (Landscape)** per tablet.
-          - **Flash interno bianco:** lo schermo si illumina al 100% di bianco e alla massima luminosità per illuminare i volti durante lo scatto.
-          - **Grafica personalizzabile per striscia:** personalizzazione singola striscia duplicata automaticamente su entrambe le colonne del foglio 10x15 cm.
+          Novità e miglioramenti:
+          - **4 Foto per Striscia:** inserita la quarta foto nella doppia striscia 2x6 pollici.
+          - **Tratteggio pulito:** eliminato il simbolo delle forbici, mantenuta la linea di taglio tratteggiata.
+          - **Scelta modalità:** possibilità di selezionare sia dalla schermata iniziale che dalle impostazioni tra "Doppia Striscia (4 foto)" e "Foto Unica Intera 10x15 cm (1 foto)".
+          - **Tasto Home / Annulla durante lo scatto:** ora è possibile interrompere la sessione e tornare alla home in qualsiasi momento durante il countdown.
+          - **Rimossi riferimenti al PIN:** accesso immediato alle impostazioni senza schermata di blocco o PIN.
+          - **Pulsante Salva in alto:** inserito in alto nella barra del titolo delle impostazioni con chiusura automatica della tastiera.
+          - **Rimossi separatore/hashtag:** grafica della striscia pulita e lineare.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

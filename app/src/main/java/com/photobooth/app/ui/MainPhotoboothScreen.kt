@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.photobooth.app.composer.PhotoStripComposer
 import com.photobooth.app.data.AppSettings
+import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
 import com.photobooth.app.printer.PrinterState
@@ -94,12 +95,17 @@ fun MainPhotoboothScreen(
                         if (hasCameraPermission) {
                             screenState = PhotoboothScreenState.Countdown(
                                 shotIndex = 1,
-                                totalShots = settings.shotsPerSession,
+                                totalShots = settings.totalShots,
                                 remainingSeconds = settings.countdownSeconds
                             )
                         } else {
                             permissionLauncher.launch(Manifest.permission.CAMERA)
                         }
+                    },
+                    onToggleLayoutMode = { newMode ->
+                        val updated = settings.copy(layoutMode = newMode)
+                        settings = updated
+                        appSettings.saveSettings(updated)
                     },
                     onOpenSettings = {
                         showSettingsDialog = true
@@ -109,17 +115,17 @@ fun MainPhotoboothScreen(
 
             is PhotoboothScreenState.Countdown -> {
                 CameraCaptureScreen(
-                    totalShots = settings.shotsPerSession,
+                    totalShots = settings.totalShots,
                     countdownSeconds = settings.countdownSeconds,
                     onSetFlashBrightness = onSetFlashBrightness,
                     onAllShotsCaptured = { capturedBitmaps ->
                         screenState = PhotoboothScreenState.Composing
                         scope.launch {
-                            val doubleStripBitmap = PhotoStripComposer.createDoubleStrip(
+                            val sheetBitmap = PhotoStripComposer.createPrintSheet(
                                 photos = capturedBitmaps,
                                 settings = settings
                             )
-                            screenState = PhotoboothScreenState.Preview(doubleStripBitmap)
+                            screenState = PhotoboothScreenState.Preview(sheetBitmap)
                         }
                     },
                     onCancel = {
@@ -135,7 +141,7 @@ fun MainPhotoboothScreen(
                 ) {
                     CircularProgressIndicator(color = Color(0xFFE91E63))
                     Text(
-                        text = "Composizione striscia in corso...",
+                        text = "Elaborazione foto in corso...",
                         color = Color.White,
                         fontSize = 18.sp,
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -206,7 +212,7 @@ fun MainPhotoboothScreen(
                     onRetakeClicked = {
                         screenState = PhotoboothScreenState.Countdown(
                             shotIndex = 1,
-                            totalShots = settings.shotsPerSession,
+                            totalShots = settings.totalShots,
                             remainingSeconds = settings.countdownSeconds
                         )
                     },
@@ -226,7 +232,7 @@ fun MainPhotoboothScreen(
             }
         }
 
-        // Settings Dialog
+        // Settings Dialog (No PIN required)
         if (showSettingsDialog) {
             SettingsDialog(
                 currentSettings = settings,

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,9 +27,10 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,11 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.photobooth.app.data.LayoutMode
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.PrinterState
 
@@ -54,12 +54,13 @@ fun IdleScreen(
     settings: SettingsData,
     printerState: PrinterState,
     onStartSession: () -> Unit,
+    onToggleLayoutMode: (LayoutMode) -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.06f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -86,20 +87,6 @@ fun IdleScreen(
                 onStartSession()
             }
     ) {
-        // Hidden secret admin button in top-right corner (long press 2 seconds)
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(100.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            onOpenSettings()
-                        }
-                    )
-                }
-        )
-
         // Top Printer Status Indicator Badge
         Surface(
             modifier = Modifier
@@ -142,7 +129,7 @@ fun IdleScreen(
             }
         }
 
-        // Visible subtle gear button for admin convenience
+        // Settings gear button (Opens directly, no PIN)
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier
@@ -152,48 +139,84 @@ fun IdleScreen(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = Color.White.copy(alpha = 0.35f),
-                modifier = Modifier.size(28.dp)
+                tint = Color.White.copy(alpha = 0.5f),
+                modifier = Modifier.size(32.dp)
             )
         }
 
-        // Center Content
+        // Center Content (Optimized for Landscape)
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(32.dp),
+                .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = settings.eventTitle.uppercase(),
-                fontSize = 48.sp,
+                fontSize = 44.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = FontFamily.Serif,
                 letterSpacing = 4.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "✦  ${settings.eventSubtitle.uppercase()}  ✦",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Light,
+                text = settings.eventSubtitle.uppercase(),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Normal,
                 letterSpacing = 2.sp,
-                color = Color(0xFFFFD700) // Gold accent
+                color = Color(0xFFFFD700)
             )
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Selector: Striscia o Foto Unica
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
+                    onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
+                    label = { Text("🎞️ Doppia Striscia (4 Foto)", fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFE91E63),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0x33FFFFFF),
+                        labelColor = Color.White.copy(alpha = 0.8f)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.height(44.dp)
+                )
+
+                FilterChip(
+                    selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
+                    onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
+                    label = { Text("🖼️ Foto Unica Intera (1 Foto)", fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFE91E63),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0x33FFFFFF),
+                        labelColor = Color.White.copy(alpha = 0.8f)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.height(44.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(36.dp))
 
             // Main Pulsing Start Button
             Button(
                 onClick = onStartSession,
                 modifier = Modifier
                     .scale(pulseScale)
-                    .height(84.dp)
+                    .height(80.dp)
                     .width(380.dp),
-                shape = RoundedCornerShape(42.dp),
+                shape = RoundedCornerShape(40.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE91E63)
                 ),
@@ -207,7 +230,7 @@ fun IdleScreen(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.width(14.dp))
                     Text(
@@ -220,13 +243,17 @@ fun IdleScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
+            val helperText = if (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS) {
+                "Verranno scattate 4 foto per comporre 2 strisce gemelle 5x15 cm"
+            } else {
+                "Verrà scattata 1 foto grande stampata a tutto foglio 10x15 cm"
+            }
             Text(
-                text = "Scatta 3 foto e ricevi la tua doppia striscia stampata al volo!",
+                text = helperText,
                 color = Color.White.copy(alpha = 0.6f),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Normal
+                fontSize = 14.sp
             )
         }
     }
