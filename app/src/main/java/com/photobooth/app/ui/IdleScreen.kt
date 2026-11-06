@@ -235,7 +235,6 @@ fun IdleScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    LayoutMode.STRIP_4_PHOTOS to "4 FOTO",
                     LayoutMode.STRIP_3_PHOTOS to "3 FOTO",
                     LayoutMode.STRIP_2_PHOTOS to "2 FOTO",
                     LayoutMode.SINGLE_PHOTO to "1 FOTO"

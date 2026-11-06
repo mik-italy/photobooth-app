@@ -571,7 +571,7 @@ class DnpDs40UsbPrinter(private val context: Context) {
      * Attende che la stampa sia completata monitorando lo stato della DNP DS40
      */
     suspend fun waitForPrintCompletion(
-        maxWaitSeconds: Int = 20,
+        maxWaitSeconds: Int = 9,
         onProgressUpdate: (remainingSeconds: Int, status: String) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         var elapsed = 0
@@ -587,11 +587,11 @@ class DnpDs40UsbPrinter(private val context: Context) {
                     onProgressUpdate(remaining, "DNP DS40 in stampa termica...")
                 }
                 PrinterState.IDLE -> {
-                    if (hasSeenProcessing && elapsed >= 4) {
+                    if (hasSeenProcessing && elapsed >= maxWaitSeconds - 1) {
                         onProgressUpdate(0, "Stampa completata con successo!")
                         return@withContext true
                     }
-                    onProgressUpdate(remaining, "Avanzamento nastro DNP DS40...")
+                    onProgressUpdate(remaining, "Stampa in corso su DNP DS40...")
                 }
                 PrinterState.STOPPED -> {
                     onProgressUpdate(remaining, statusResult.message)
@@ -611,6 +611,7 @@ class DnpDs40UsbPrinter(private val context: Context) {
             elapsed++
         }
 
+        onProgressUpdate(0, "Stampa completata con successo!")
         return@withContext true
     }
 
@@ -723,46 +724,53 @@ class DnpDs40UsbPrinter(private val context: Context) {
     }
 
     /**
-     * Ridimensiona e orienta il bitmap per il rullo da 6 pollici di DNP DS40:
-     * - Se verticale (1200 x 1800), ruota di 90° in landscape (1800 x 1200) e adatta a 1920 x 1240 al vivo.
-     * - Se orizzontale (1800 x 1200), adatta direttamente a 1920 x 1240.
+     * Adatta il foglio grafico per la stampante DNP DS40 (300 DPI nativi, 1920 x 1240 px al vivo):
+     * - Se in verticale (1200 x 1800 px), ruota di 90° orario per allineare le due strisce 2x6"
+     *   lungo la lama centrale di taglio orizzontale (Y = 600 -> Y = 620).
+     * - Mantiene i margini originali perfetti 1:1 identici alla Canon Selphy:
+     *   Centra il canvas 1800 x 1200 all'interno del buffer 1920 x 1240 (offset X=60 px, Y=20 px).
+     * - Estende il background nei 60 px di overbleed laterali e 20 px sopra/sotto per evitare
+     *   qualsiasi bordo bianco senza tagliare né distorcere le foto e i testi.
      */
     private fun prepareBitmapForDnp(source: Bitmap): Bitmap {
         val srcW = source.width
         val srcH = source.height
 
-        val rotatedBitmap: Bitmap = if (srcH > srcW) {
-            // Ruota 90 gradi orario in landscape per allineare le due strisce da 2x6" lungo la taglierina
+        val landscapeBitmap: Bitmap = if (srcH > srcW) {
             val matrix = Matrix().apply { postRotate(90f) }
             Bitmap.createBitmap(source, 0, 0, srcW, srcH, matrix, true)
         } else {
             source
         }
 
-        // Scala al vivo a 1920 x 1240 con ritaglio centrale
         val outputBitmap = Bitmap.createBitmap(DNP_PRINT_WIDTH, DNP_PRINT_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(outputBitmap)
 
-        val rw = rotatedBitmap.width.toFloat()
-        val rh = rotatedBitmap.height.toFloat()
-        val destW = DNP_PRINT_WIDTH.toFloat()
-        val destH = DNP_PRINT_HEIGHT.toFloat()
+        val offsetX = (DNP_PRINT_WIDTH - landscapeBitmap.width) / 2 // (1920 - 1800) / 2 = 60 px
+        val offsetY = (DNP_PRINT_HEIGHT - landscapeBitmap.height) / 2 // (1240 - 1200) / 2 = 20 px
 
-        val rRatio = rw / rh
-        val destRatio = destW / destH
+        // 1. Riempi il canvas con il colore di fondo (pixel d'angolo della composizione)
+        val bgColor = landscapeBitmap.getPixel(0, 0)
+        canvas.drawColor(bgColor)
 
-        val srcRect = if (rRatio > destRatio) {
-            val newWidth = (rh * destRatio).toInt()
-            val left = ((rw - newWidth) / 2f).toInt()
-            Rect(left, 0, left + newWidth, rh.toInt())
-        } else {
-            val newHeight = (rw / destRatio).toInt()
-            val top = ((rh - newHeight) / 2f).toInt()
-            Rect(0, top, rw.toInt(), top + newHeight)
-        }
+        // 2. Clona i bordi esterni nell'area di overbleed (60 px a sinistra/destra, 20 px sopra/sotto)
+        // per garantire continuità anche con sfondi grafici personalizzati o texture ed evitare bordi bianchi
+        val edgePaint = Paint(Paint.FILTER_BITMAP_FLAG)
+        // Bordo sinistro (X: 0..offsetX)
+        canvas.drawBitmap(landscapeBitmap, Rect(0, 0, 1, landscapeBitmap.height), Rect(0, offsetY, offsetX, offsetY + landscapeBitmap.height), edgePaint)
+        // Bordo destro (X: offsetX+W .. 1920)
+        canvas.drawBitmap(landscapeBitmap, Rect(landscapeBitmap.width - 1, 0, landscapeBitmap.width, landscapeBitmap.height), Rect(offsetX + landscapeBitmap.width, offsetY, DNP_PRINT_WIDTH, offsetY + landscapeBitmap.height), edgePaint)
+        // Bordo superiore (Y: 0..offsetY)
+        canvas.drawBitmap(landscapeBitmap, Rect(0, 0, landscapeBitmap.width, 1), Rect(offsetX, 0, offsetX + landscapeBitmap.width, offsetY), edgePaint)
+        // Bordo inferiore (Y: offsetY+H .. 1240)
+        canvas.drawBitmap(landscapeBitmap, Rect(0, landscapeBitmap.height - 1, landscapeBitmap.width, landscapeBitmap.height), Rect(offsetX, offsetY + landscapeBitmap.height, offsetX + landscapeBitmap.width, DNP_PRINT_HEIGHT), edgePaint)
 
-        val destRect = Rect(0, 0, DNP_PRINT_WIDTH, DNP_PRINT_HEIGHT)
-        canvas.drawBitmap(rotatedBitmap, srcRect, destRect, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+        // 2. Disegna l'immagine originale a grandezza naturale 1:1 centrata (X=60..1860, Y=20..1220)
+        // In questo modo le proporzioni, i margini e la nitidezza rimangono perfetti al 100% identici a Canon Selphy
+        // e la linea di taglio cade esattamente a Y=620 (lama meccanica centrale DNP DS40).
+        val contentDestRect = Rect(offsetX, offsetY, offsetX + landscapeBitmap.width, offsetY + landscapeBitmap.height)
+        val contentPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        canvas.drawBitmap(landscapeBitmap, null, contentDestRect, contentPaint)
 
         return outputBitmap
     }

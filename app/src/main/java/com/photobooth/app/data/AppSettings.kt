@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 
 enum class LayoutMode {
-    STRIP_4_PHOTOS,   // 4 FOTO (Doppia striscia verticale 2x6)
     STRIP_3_PHOTOS,   // 3 FOTO (Doppia striscia verticale 2x6)
     STRIP_2_PHOTOS,   // 2 FOTO (Doppia striscia orizzontale 6x2)
     SINGLE_PHOTO      // 1 FOTO (Foto unica orizzontale 10x15)
@@ -31,7 +30,7 @@ data class SettingsData(
     val eventTitle: String = "Photobooth",      // Default: Photobooth
     val showTitleOnPrints: Boolean = false,     // Default: disattivato sotto le foto (sempre visibile in Home)
     val fontChoice: FontChoice = FontChoice.PLAYFAIR,
-    val layoutMode: LayoutMode = LayoutMode.STRIP_4_PHOTOS,
+    val layoutMode: LayoutMode = LayoutMode.STRIP_3_PHOTOS,
     val stripBackgroundColor: String = "#FFFFFF",
     val stripTextColor: String = "#000000",
     val titleFontSize: Int = 48,
@@ -46,7 +45,6 @@ data class SettingsData(
 ) {
     val totalShots: Int
         get() = when (layoutMode) {
-            LayoutMode.STRIP_4_PHOTOS -> 4
             LayoutMode.STRIP_3_PHOTOS -> 3
             LayoutMode.STRIP_2_PHOTOS -> 2
             LayoutMode.SINGLE_PHOTO -> 1
@@ -58,11 +56,12 @@ class AppSettings(context: Context) {
         context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE)
 
     fun loadSettings(): SettingsData {
-        val modeStr = prefs.getString("layout_mode", LayoutMode.STRIP_4_PHOTOS.name)
+        val modeStr = prefs.getString("layout_mode", LayoutMode.STRIP_3_PHOTOS.name)
         val mode = try {
-            LayoutMode.valueOf(modeStr ?: LayoutMode.STRIP_4_PHOTOS.name)
+            if (modeStr == "STRIP_4_PHOTOS") LayoutMode.STRIP_3_PHOTOS
+            else LayoutMode.valueOf(modeStr ?: LayoutMode.STRIP_3_PHOTOS.name)
         } catch (_: Exception) {
-            LayoutMode.STRIP_4_PHOTOS
+            LayoutMode.STRIP_3_PHOTOS
         }
 
         val fontStr = prefs.getString("font_choice", FontChoice.PLAYFAIR.name)

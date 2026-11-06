@@ -179,10 +179,11 @@ fun MainPhotoboothScreen(
                             val isDnp = settings.printerType == PrinterType.DNP_DS40_USB
 
                             if (isDnp) {
-                                // STAMPA VIA CAVO USB SU DNP DS40 (300 DPI nativi, ~9s per stampa)
-                                val timeoutDnp = maxOf(20, 15 * copiesCount)
+                                // STAMPA VIA CAVO USB SU DNP DS40 (9 secondi a copia esatti)
+                                val timeoutDnp = 9 * copiesCount
                                 screenState = PhotoboothScreenState.Printing(
                                     remainingSeconds = timeoutDnp,
+                                    totalSeconds = timeoutDnp,
                                     statusMessage = "Invio lavoro a DNP DS40 via USB ($copiesCount copie)...",
                                     isCompleted = false
                                 )
@@ -192,6 +193,7 @@ fun MainPhotoboothScreen(
                                     if (connectedDev == null) {
                                         screenState = PhotoboothScreenState.Printing(
                                             remainingSeconds = 0,
+                                            totalSeconds = timeoutDnp,
                                             statusMessage = "Errore: DNP DS40 non collegata! Verifica cavo USB e adattatore OTG.",
                                             isCompleted = false
                                         )
@@ -203,6 +205,7 @@ fun MainPhotoboothScreen(
                                     if (!dnpPrinter.hasPermission(connectedDev)) {
                                         screenState = PhotoboothScreenState.Printing(
                                             remainingSeconds = 0,
+                                            totalSeconds = timeoutDnp,
                                             statusMessage = "Autorizzazione USB necessaria: concedi l'accesso nelle impostazioni.",
                                             isCompleted = false
                                         )
@@ -213,8 +216,7 @@ fun MainPhotoboothScreen(
                                     }
 
                                     val cut2x6Enabled = settings.dnpCut2x6 &&
-                                        (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS ||
-                                         settings.layoutMode == LayoutMode.STRIP_3_PHOTOS ||
+                                        (settings.layoutMode == LayoutMode.STRIP_3_PHOTOS ||
                                          settings.layoutMode == LayoutMode.STRIP_2_PHOTOS)
 
                                     val printResult = dnpPrinter.printBitmap(
@@ -229,6 +231,7 @@ fun MainPhotoboothScreen(
                                         android.util.Log.e("MainPhotobooth", "Stampa DNP USB non riuscita: $err")
                                         screenState = PhotoboothScreenState.Printing(
                                             remainingSeconds = 0,
+                                            totalSeconds = timeoutDnp,
                                             statusMessage = "Errore DNP: $err",
                                             isCompleted = false
                                         )
@@ -243,6 +246,7 @@ fun MainPhotoboothScreen(
                                         ) { remaining, msg ->
                                             screenState = PhotoboothScreenState.Printing(
                                                 remainingSeconds = remaining,
+                                                totalSeconds = timeoutDnp,
                                                 statusMessage = msg,
                                                 isCompleted = false
                                             )
@@ -253,6 +257,7 @@ fun MainPhotoboothScreen(
 
                                     screenState = PhotoboothScreenState.Printing(
                                         remainingSeconds = 0,
+                                        totalSeconds = timeoutDnp,
                                         statusMessage = "Stampa completata su DNP DS40 ($copiesCount copie)!",
                                         isCompleted = true
                                     )
@@ -268,6 +273,7 @@ fun MainPhotoboothScreen(
                                 if (settings.waitForPrinterFinish) {
                                     screenState = PhotoboothScreenState.Printing(
                                         remainingSeconds = totalWait,
+                                        totalSeconds = totalWait,
                                         statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
                                         isCompleted = false
                                     )
@@ -292,6 +298,7 @@ fun MainPhotoboothScreen(
                                         ) { remaining, msg ->
                                             screenState = PhotoboothScreenState.Printing(
                                                 remainingSeconds = remaining,
+                                                totalSeconds = totalWait,
                                                 statusMessage = msg,
                                                 isCompleted = false
                                             )
@@ -299,6 +306,7 @@ fun MainPhotoboothScreen(
 
                                         screenState = PhotoboothScreenState.Printing(
                                             remainingSeconds = 0,
+                                            totalSeconds = totalWait,
                                             statusMessage = "Stampa completata ($copiesCount copie)!",
                                             isCompleted = true
                                         )
@@ -339,9 +347,10 @@ fun MainPhotoboothScreen(
                 is PhotoboothScreenState.Printing -> {
                     PrintingScreen(
                         remainingSeconds = state.remainingSeconds,
-                        totalTimeoutSeconds = settings.printTimeoutSeconds,
+                        totalTimeoutSeconds = state.totalSeconds,
                         statusMessage = state.statusMessage,
                         isCompleted = state.isCompleted,
+                        isDnp = settings.printerType == PrinterType.DNP_DS40_USB,
                         onCancel = {
                             printJob?.cancel()
                             screenState = PhotoboothScreenState.Idle

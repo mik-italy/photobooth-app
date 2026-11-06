@@ -21,6 +21,7 @@ sealed class PhotoboothScreenState {
     data class Printing(
         val remainingSeconds: Int,
         val statusMessage: String,
-        val isCompleted: Boolean = false
+        val isCompleted: Boolean = false,
+        val totalSeconds: Int = 40
     ) : PhotoboothScreenState()
 }

@@ -38,18 +38,16 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.2.1
-        name: "Photobooth App v1.2.1 - Fix Stampa USB DNP DS40 e Diagnostica Avanzata"
+        tag_name: v1.2.2
+        name: "Photobooth App v1.2.2 - Fix Margini DNP DS40, Timer 9s e Rimozione 4 Foto"
         body: |
-          ### Photobooth Android v1.2.1 📸🖨️🔌
-          
-          Risoluzione problemi e miglioramenti per la stampa via cavo USB con DNP DS40:
-          - **Fix Protocollo ESC/P DNP:** corretto il calcolo esatto della lunghezza payload (2.381.888 byte per ciascun piano YMC) e allineamento dell'header DIB a 1088 byte con PadSize 10 byte (in conformità con le specifiche CUPS / Gutenprint).
-          - **Sequenza Comandi Completa:** aggiunti i comandi `CNTRL RETENTION`, corretta la sequenza `CNTRL CUTTER` (attivo/disattivo) e `CNTRL BUFFCNTRL` a 0.
-          - **Trasmissione Bulk a Singoli Pacchetti:** i comandi di controllo e i piani grafici vengono ora inviati a singoli blocchi USB distinti per evitare buffer underrun/confusion sul controller Renesas della stampante.
-          - **Compatibilità Android 13/14 Permessi USB:** aggiornato `ACTION_USB_PERMISSION` con `RECEIVER_EXPORTED` ed explicit package per garantire che il dialog e il callback di sistema compaiano sempre.
-          - **Nuovo Pannello Diagnostica DNP:** nelle impostazioni è ora presente un tasto "Diagnostica DNP DS40" che interroga seriale, firmware, stato buffer ed eventuali errori in tempo reale.
-          - **Gestione Errori a Schermo:** se il cavo non è collegato, i permessi non sono concessi o la stampante riscontra un errore, un messaggio visibile e dettagliato viene mostrato a schermo anziché dare falso successo.
+          ### Photobooth Android v1.2.2 📸🖨️✨
+
+          Rilascio e ottimizzazioni specifiche per DNP DS40 e layout:
+          - **Rimozione Opzione 4 Foto:** rimosso completamente il layout da 4 foto (`STRIP_4_PHOTOS`) sia dalla Home che dal menu impostazioni; ora sono selezionabili esclusivamente le modalità a **3 foto** (doppia striscia verticale 2x6"), **2 foto** (striscia orizzontale) e **1 foto** (foto singola 10x15).
+          - **Timer di Stampa DNP DS40 Adattivo (9s a copia):** quando è impostata la stampante DNP DS40 via USB, il conto alla rovescia di stampa scala dinamicamente a 9 secondi per copia (es. 9s per 1 copia, 18s per 2 copie), rispecchiando esattamente la velocità termica reale dell'hardware. Per la Canon SELPHY rimane a 40s per copia.
+          - **Messaggio di Ritiro Stampa Dinamico:** al termine del processo di stampa, viene mostrato il nome corretto della stampante in uso ("Ritira la stampa dalla stampante DNP DS40!" oppure "Ritira la stampa dalla stampante Canon SELPHY!").
+          - **Fix Margini e Taglio DNP DS40 Pixel-Perfect:** eliminata la deformazione e lo stiramento proporzionale precedente; ora la grafica 1800x1200 a 300 DPI viene centrata 1:1 nel canvas 1920x1240 della DNP con estensione continua dei bordi nell'overbleed. I margini interni delle foto risultano identici a quelli della Canon Selphy e la linea di taglio cade esattamente a Y=620 sulla lama centrale DNP per entrambe le strisce 2x6".
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk

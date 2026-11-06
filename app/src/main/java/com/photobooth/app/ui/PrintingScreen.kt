@@ -92,6 +92,7 @@ fun PrintingScreen(
     totalTimeoutSeconds: Int = 40,
     statusMessage: String,
     isCompleted: Boolean,
+    isDnp: Boolean = false,
     onCancel: () -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -322,7 +323,7 @@ fun PrintingScreen(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         Text(
-                            text = "Ritira la stampa dalla stampante Canon SELPHY!",
+                            text = if (isDnp) "Ritira la stampa dalla stampante DNP DS40!" else "Ritira la stampa dalla stampante Canon SELPHY!",
                             fontSize = 19.sp,
                             color = Color.White.copy(alpha = 0.85f),
                             fontWeight = FontWeight.Medium

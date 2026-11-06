@@ -444,9 +444,9 @@ fun SettingsDialog(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         FilterChip(
-                            selected = layoutMode == LayoutMode.STRIP_4_PHOTOS,
-                            onClick = { layoutMode = LayoutMode.STRIP_4_PHOTOS },
-                            label = { Text("4 FOTO (Doppia Striscia 2x6\")", fontWeight = FontWeight.Bold) },
+                            selected = layoutMode == LayoutMode.STRIP_3_PHOTOS,
+                            onClick = { layoutMode = LayoutMode.STRIP_3_PHOTOS },
+                            label = { Text("3 FOTO (Doppia Striscia 2x6\")", fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.White,
                                 selectedLabelColor = Color.Black,
@@ -455,9 +455,9 @@ fun SettingsDialog(
                             )
                         )
                         FilterChip(
-                            selected = layoutMode == LayoutMode.STRIP_3_PHOTOS,
-                            onClick = { layoutMode = LayoutMode.STRIP_3_PHOTOS },
-                            label = { Text("3 FOTO (Doppia Striscia 2x6\")", fontWeight = FontWeight.Bold) },
+                            selected = layoutMode == LayoutMode.STRIP_2_PHOTOS,
+                            onClick = { layoutMode = LayoutMode.STRIP_2_PHOTOS },
+                            label = { Text("2 FOTO (Striscia 6x2\")", fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.White,
                                 selectedLabelColor = Color.Black,
@@ -471,17 +471,6 @@ fun SettingsDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        FilterChip(
-                            selected = layoutMode == LayoutMode.STRIP_2_PHOTOS,
-                            onClick = { layoutMode = LayoutMode.STRIP_2_PHOTOS },
-                            label = { Text("2 FOTO (Striscia Orizzontale)", fontWeight = FontWeight.Bold) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.White,
-                                selectedLabelColor = Color.Black,
-                                containerColor = Color(0xFF2A2A34),
-                                labelColor = Color.White.copy(alpha = 0.7f)
-                            )
-                        )
                         FilterChip(
                             selected = layoutMode == LayoutMode.SINGLE_PHOTO,
                             onClick = { layoutMode = LayoutMode.SINGLE_PHOTO },
