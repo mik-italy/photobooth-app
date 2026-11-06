@@ -132,9 +132,19 @@ fun SettingsDialog(
 
     val scope = rememberCoroutineScope()
     val dnpPrinter = remember { DnpDs40UsbPrinter(context) }
+    var usbRefreshTrigger by remember { mutableStateOf(0) }
     var isTestingConnection by remember { mutableStateOf(false) }
     var testResultText by remember { mutableStateOf<String?>(null) }
     var testResultColor by remember { mutableStateOf(Color.Gray) }
+
+    LaunchedEffect(printerType) {
+        if (printerType == PrinterType.DNP_DS40_USB) {
+            while (true) {
+                delay(2000)
+                usbRefreshTrigger++
+            }
+        }
+    }
 
     // Palette Colori Sfondo Predefiniti
     val bgPalette = listOf(
@@ -892,7 +902,10 @@ fun SettingsDialog(
                         }
                     } else {
                         // Configurazione DNP DS40 via cavo USB
-                        val connectedDnp = remember { dnpPrinter.findConnectedDevice() }
+                        val connectedDnp = remember(usbRefreshTrigger) { dnpPrinter.findConnectedDevice() }
+                        val allDevices = remember(usbRefreshTrigger) { dnpPrinter.getAllUsbDevices() }
+                        val hasUsbPerm = connectedDnp != null && dnpPrinter.hasPermission(connectedDnp)
+
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             color = Color(0xFF1E1E28),
@@ -904,52 +917,80 @@ fun SettingsDialog(
                                     Icon(Icons.Default.Usb, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (connectedDnp != null) "✓ DNP DS40 Rilevata su porta USB" else "Nessuna stampante DNP DS40 rilevata su USB",
+                                        text = when {
+                                            connectedDnp != null && hasUsbPerm -> "✓ DNP DS40 Rilevata e Autorizzata"
+                                            connectedDnp != null -> "⚠️ DNP DS40 Rilevata - Richiede Autorizzazione"
+                                            allDevices.isNotEmpty() -> "⚠️ Dispositivo USB collegato (non riconosciuto come DNP)"
+                                            else -> "Nessuna stampante DNP DS40 rilevata su USB"
+                                        },
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
-                                        color = if (connectedDnp != null) Color(0xFF81C784) else Color(0xFFFFB74D)
+                                        color = when {
+                                            connectedDnp != null && hasUsbPerm -> Color(0xFF81C784)
+                                            connectedDnp != null -> Color(0xFFFFD54F)
+                                            else -> Color(0xFFFF8A80)
+                                        }
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Collega la DNP DS40 alla porta USB del tablet con cavo USB-C/OTG (300 DPI nativi, stampa in 8.9s).",
+                                    text = if (connectedDnp != null) {
+                                        val devName = connectedDnp.productName ?: "DNP Photo Printer"
+                                        "Periferica: $devName (VID: 0x${connectedDnp.vendorId.toString(16).padStart(4, '0')} - PID: 0x${connectedDnp.productId.toString(16).padStart(4, '0')})"
+                                    } else if (allDevices.isNotEmpty()) {
+                                        "Dispositivi USB rilevati sul tablet: " + allDevices.joinToString { "${it.productName ?: "Periferica"} (VID: 0x${it.vendorId.toString(16)}, PID: 0x${it.productId.toString(16)})" }
+                                    } else {
+                                        "Collega la DNP DS40 alla porta USB-C del tablet con un adattatore USB-OTG e cavo USB-B. Assicurati che la stampante sia accesa."
+                                    },
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.6f)
+                                    color = Color.White.copy(alpha = 0.7f)
                                 )
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    if (connectedDnp != null && !hasUsbPerm) {
+                                        Button(
+                                            onClick = {
+                                                dnpPrinter.requestPermission(connectedDnp) { granted ->
+                                                    usbRefreshTrigger++
+                                                    if (granted) {
+                                                        testResultText = "✓ Permesso concesso! Ora puoi avviare la diagnostica o stampare."
+                                                        testResultColor = Color(0xFF81C784)
+                                                    } else {
+                                                        testResultText = "Permesso USB negato dall'utente"
+                                                        testResultColor = Color(0xFFFF5252)
+                                                    }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                                        ) {
+                                            Text("Autorizza Permesso USB", color = Color.White, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+
                                     OutlinedButton(
                                         onClick = {
                                             scope.launch {
                                                 isTestingConnection = true
                                                 testResultText = null
-                                                val dev = dnpPrinter.findConnectedDevice()
-                                                if (dev == null) {
-                                                    isTestingConnection = false
-                                                    testResultText = "Nessun dispositivo USB DNP trovato"
-                                                    testResultColor = Color(0xFFFF5252)
-                                                } else if (!dnpPrinter.hasPermission(dev)) {
-                                                    dnpPrinter.requestPermission(dev) { granted ->
-                                                        isTestingConnection = false
-                                                        if (granted) {
-                                                            testResultText = "Permesso USB concesso!"
-                                                            testResultColor = Color(0xFF81C784)
-                                                        } else {
-                                                            testResultText = "Permesso USB negato dall'utente"
-                                                            testResultColor = Color(0xFFFF5252)
-                                                        }
-                                                    }
+                                                val diag = dnpPrinter.runDiagnostics()
+                                                isTestingConnection = false
+                                                usbRefreshTrigger++
+                                                if (diag.success) {
+                                                    val extra = listOfNotNull(
+                                                        diag.serialNumber?.let { "S/N: $it" },
+                                                        diag.firmwareVersion?.let { "FW: $it" },
+                                                        diag.freeBuffers?.let { "Buf: $it" }
+                                                    ).joinToString(" | ")
+                                                    testResultText = "✓ ${diag.statusMessage} ${if (extra.isNotEmpty()) "($extra)" else ""}"
+                                                    testResultColor = Color(0xFF81C784)
                                                 } else {
-                                                    val res = dnpPrinter.getPrinterStatus()
-                                                    isTestingConnection = false
-                                                    testResultText = res.message
-                                                    testResultColor = when (res.state) {
-                                                        PrinterState.IDLE -> Color(0xFF81C784)
-                                                        PrinterState.PROCESSING -> Color(0xFFFFD54F)
-                                                        else -> Color(0xFFFF5252)
-                                                    }
+                                                    testResultText = diag.error ?: diag.statusMessage
+                                                    testResultColor = Color(0xFFFF5252)
                                                 }
                                             }
                                         },
@@ -962,18 +1003,18 @@ fun SettingsDialog(
                                             Icon(Icons.Default.Usb, contentDescription = null, tint = Color.White)
                                             Spacer(modifier = Modifier.width(8.dp))
                                         }
-                                        Text("Testa / Autorizza USB DNP", color = Color.White)
+                                        Text("Diagnostica DNP DS40", color = Color.White)
                                     }
+                                }
 
-                                    if (testResultText != null) {
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            text = testResultText ?: "",
-                                            color = testResultColor,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                                if (testResultText != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = testResultText ?: "",
+                                        color = testResultColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }

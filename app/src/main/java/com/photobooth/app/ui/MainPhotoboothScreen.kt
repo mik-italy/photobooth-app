@@ -188,6 +188,30 @@ fun MainPhotoboothScreen(
                                 )
 
                                 printJob = scope.launch {
+                                    val connectedDev = dnpPrinter.findConnectedDevice()
+                                    if (connectedDev == null) {
+                                        screenState = PhotoboothScreenState.Printing(
+                                            remainingSeconds = 0,
+                                            statusMessage = "Errore: DNP DS40 non collegata! Verifica cavo USB e adattatore OTG.",
+                                            isCompleted = false
+                                        )
+                                        delay(7000)
+                                        screenState = PhotoboothScreenState.Idle
+                                        return@launch
+                                    }
+
+                                    if (!dnpPrinter.hasPermission(connectedDev)) {
+                                        screenState = PhotoboothScreenState.Printing(
+                                            remainingSeconds = 0,
+                                            statusMessage = "Autorizzazione USB necessaria: concedi l'accesso nelle impostazioni.",
+                                            isCompleted = false
+                                        )
+                                        dnpPrinter.requestPermission(connectedDev) {}
+                                        delay(7000)
+                                        screenState = PhotoboothScreenState.Idle
+                                        return@launch
+                                    }
+
                                     val cut2x6Enabled = settings.dnpCut2x6 &&
                                         (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS ||
                                          settings.layoutMode == LayoutMode.STRIP_3_PHOTOS ||
@@ -201,7 +225,16 @@ fun MainPhotoboothScreen(
                                     )
 
                                     if (printResult.isFailure) {
-                                        android.util.Log.e("MainPhotobooth", "Stampa DNP USB non riuscita: ${printResult.exceptionOrNull()?.message}")
+                                        val err = printResult.exceptionOrNull()?.message ?: "Errore sconosciuto"
+                                        android.util.Log.e("MainPhotobooth", "Stampa DNP USB non riuscita: $err")
+                                        screenState = PhotoboothScreenState.Printing(
+                                            remainingSeconds = 0,
+                                            statusMessage = "Errore DNP: $err",
+                                            isCompleted = false
+                                        )
+                                        delay(8000)
+                                        screenState = PhotoboothScreenState.Idle
+                                        return@launch
                                     }
 
                                     if (settings.waitForPrinterFinish) {

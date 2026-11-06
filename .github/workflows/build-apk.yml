@@ -38,17 +38,18 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.2.0
-        name: "Photobooth App v1.2.0 - Supporto Stampa via Cavo USB con DNP DS40"
+        tag_name: v1.2.1
+        name: "Photobooth App v1.2.1 - Fix Stampa USB DNP DS40 e Diagnostica Avanzata"
         body: |
-          ### Photobooth Android v1.2.0 📸🖨️🔌
+          ### Photobooth Android v1.2.1 📸🖨️🔌
           
-          Nuovi aggiornamenti:
-          - **Supporto Stampa via Cavo USB con DNP DS40:** aggiunto driver nativo USB Host (OTG) per stampanti professionali a sublimazione DNP DS40 (VID: 0x1343, PID: 0x0003) e modelli compatibili (DS-RX1, DS620).
-          - **Stampa Diretta a 300 DPI al Vivo:** generazione e streaming dei 3 piani di colore YMC (Giallo, Magenta, Ciano) a 1920 x 1240 px senza necessità di driver esterni o PC intermedi.
-          - **Taglio Meccanico 2x6" Automatico:** integrazione del comando per azionare la lama interna della DS40 che divide automaticamente la stampa in due strisce 2x6 pollici separate.
-          - **Finitura Lucida / Opaca:** opzione selezionabile nelle impostazioni per overcoat Lucido (Glossy) o Opaco (Matte).
-          - **Selettore Stampante nelle Impostazioni:** possibilità di scegliere tra Canon SELPHY CP1500 (Wi-Fi IPP) e DNP DS40 (Cavo USB), con pulsante di test connessione dedicato e indicatore stato real-time in Home.
+          Risoluzione problemi e miglioramenti per la stampa via cavo USB con DNP DS40:
+          - **Fix Protocollo ESC/P DNP:** corretto il calcolo esatto della lunghezza payload (2.381.888 byte per ciascun piano YMC) e allineamento dell'header DIB a 1088 byte con PadSize 10 byte (in conformità con le specifiche CUPS / Gutenprint).
+          - **Sequenza Comandi Completa:** aggiunti i comandi `CNTRL RETENTION`, corretta la sequenza `CNTRL CUTTER` (attivo/disattivo) e `CNTRL BUFFCNTRL` a 0.
+          - **Trasmissione Bulk a Singoli Pacchetti:** i comandi di controllo e i piani grafici vengono ora inviati a singoli blocchi USB distinti per evitare buffer underrun/confusion sul controller Renesas della stampante.
+          - **Compatibilità Android 13/14 Permessi USB:** aggiornato `ACTION_USB_PERMISSION` con `RECEIVER_EXPORTED` ed explicit package per garantire che il dialog e il callback di sistema compaiano sempre.
+          - **Nuovo Pannello Diagnostica DNP:** nelle impostazioni è ora presente un tasto "Diagnostica DNP DS40" che interroga seriale, firmware, stato buffer ed eventuali errori in tempo reale.
+          - **Gestione Errori a Schermo:** se il cavo non è collegato, i permessi non sono concessi o la stampante riscontra un errore, un messaggio visibile e dettagliato viene mostrato a schermo anziché dare falso successo.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
