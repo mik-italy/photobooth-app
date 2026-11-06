@@ -10,6 +10,11 @@ enum class LayoutMode {
     SINGLE_PHOTO      // 1 FOTO (Foto unica orizzontale 10x15)
 }
 
+enum class PrinterType {
+    CANON_SELPHY_WIFI,  // Canon SELPHY CP1500 (Wi-Fi IPP)
+    DNP_DS40_USB        // DNP DS40 / Citizen CX (Cavo USB OTG)
+}
+
 enum class FontChoice {
     PLAYFAIR,        // Playfair Display Bold Italic (Elegante)
     MONTSERRAT,      // Montserrat Bold (Moderno Sans)
@@ -18,8 +23,11 @@ enum class FontChoice {
 }
 
 data class SettingsData(
+    val printerType: PrinterType = PrinterType.CANON_SELPHY_WIFI,
     val printerIp: String = "192.168.0.1",      // Default IP Canon: 192.168.0.1
     val printerPort: Int = 631,
+    val dnpCut2x6: Boolean = true,              // Taglio automatico 2x6" per strisce su DNP DS40
+    val dnpMatte: Boolean = false,              // Finitura DNP: false = Lucida (Glossy), true = Opaca (Matte)
     val eventTitle: String = "Photobooth",      // Default: Photobooth
     val showTitleOnPrints: Boolean = false,     // Default: disattivato sotto le foto (sempre visibile in Home)
     val fontChoice: FontChoice = FontChoice.PLAYFAIR,
@@ -64,9 +72,19 @@ class AppSettings(context: Context) {
             FontChoice.PLAYFAIR
         }
 
+        val printerTypeStr = prefs.getString("printer_type", PrinterType.CANON_SELPHY_WIFI.name)
+        val pType = try {
+            PrinterType.valueOf(printerTypeStr ?: PrinterType.CANON_SELPHY_WIFI.name)
+        } catch (_: Exception) {
+            PrinterType.CANON_SELPHY_WIFI
+        }
+
         return SettingsData(
+            printerType = pType,
             printerIp = prefs.getString("printer_ip", "192.168.0.1") ?: "192.168.0.1",
             printerPort = prefs.getInt("printer_port", 631),
+            dnpCut2x6 = prefs.getBoolean("dnp_cut_2x6", true),
+            dnpMatte = prefs.getBoolean("dnp_matte", false),
             eventTitle = prefs.getString("event_title", "Photobooth") ?: "Photobooth",
             showTitleOnPrints = prefs.getBoolean("show_title_on_prints", false),
             fontChoice = font,
@@ -87,8 +105,11 @@ class AppSettings(context: Context) {
 
     fun saveSettings(settings: SettingsData) {
         prefs.edit().apply {
+            putString("printer_type", settings.printerType.name)
             putString("printer_ip", settings.printerIp)
             putInt("printer_port", settings.printerPort)
+            putBoolean("dnp_cut_2x6", settings.dnpCut2x6)
+            putBoolean("dnp_matte", settings.dnpMatte)
             putString("event_title", settings.eventTitle)
             putBoolean("show_title_on_prints", settings.showTitleOnPrints)
             putString("font_choice", settings.fontChoice.name)

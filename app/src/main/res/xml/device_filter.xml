@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DNP DS40 / Citizen CX (VID: 0x1343 / 4931, PID: 0x0003 / 3) -->
+    <usb-device vendor-id="4931" product-id="3" />
+    <!-- DNP DS-RX1 / Citizen CY (VID: 0x1343 / 4931, PID: 0x0005 / 5) -->
+    <usb-device vendor-id="4931" product-id="5" />
+    <!-- DNP DS620 (VID: 0x1452 / 5202, PID: 0x8b01 / 35585) -->
+    <usb-device vendor-id="5202" product-id="35585" />
+</resources>

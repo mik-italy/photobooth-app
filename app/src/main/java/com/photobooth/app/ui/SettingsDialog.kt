@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PhotoAlbum
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -74,8 +76,10 @@ import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import com.photobooth.app.data.FontChoice
 import com.photobooth.app.data.LayoutMode
+import com.photobooth.app.data.PrinterType
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
+import com.photobooth.app.printer.DnpDs40UsbPrinter
 import com.photobooth.app.printer.PrinterState
 import kotlinx.coroutines.launch
 import java.io.File
@@ -106,8 +110,11 @@ fun SettingsDialog(
     }
 
     // Settings fields
+    var printerType by remember { mutableStateOf(currentSettings.printerType) }
     var printerIp by remember { mutableStateOf(currentSettings.printerIp) }
     var printerPort by remember { mutableStateOf(currentSettings.printerPort.toString()) }
+    var dnpCut2x6 by remember { mutableStateOf(currentSettings.dnpCut2x6) }
+    var dnpMatte by remember { mutableStateOf(currentSettings.dnpMatte) }
     var eventTitle by remember { mutableStateOf(currentSettings.eventTitle) }
     var showTitleOnPrints by remember { mutableStateOf(currentSettings.showTitleOnPrints) }
     var fontChoice by remember { mutableStateOf(currentSettings.fontChoice) }
@@ -123,6 +130,7 @@ fun SettingsDialog(
     var timeoutSec by remember { mutableStateOf(currentSettings.printTimeoutSeconds.toString()) }
 
     val scope = rememberCoroutineScope()
+    val dnpPrinter = remember { DnpDs40UsbPrinter(context) }
     var isTestingConnection by remember { mutableStateOf(false) }
     var testResultText by remember { mutableStateOf<String?>(null) }
     var testResultColor by remember { mutableStateOf(Color.Gray) }
@@ -198,8 +206,11 @@ fun SettingsDialog(
     fun performSave() {
         keyboardController?.hide()
         val updated = currentSettings.copy(
+            printerType = printerType,
             printerIp = printerIp.trim(),
             printerPort = printerPort.toIntOrNull() ?: 631,
+            dnpCut2x6 = dnpCut2x6,
+            dnpMatte = dnpMatte,
             eventTitle = eventTitle.trim(),
             showTitleOnPrints = showTitleOnPrints,
             fontChoice = fontChoice,
@@ -746,12 +757,12 @@ fun SettingsDialog(
 
                     Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
 
-                    // SECTION 4: Stampante Canon SELPHY CP1500
+                    // SECTION 4: Selezione Stampante (Canon SELPHY Wi-Fi o DNP DS40 Cavo USB)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Print, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "STAMPANTE CANON SELPHY CP1500",
+                            text = "SELEZIONE STAMPANTE PHOTOBOOTH",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -759,79 +770,272 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedTextField(
-                            value = printerIp,
-                            onValueChange = { printerIp = it },
-                            label = { Text("Indirizzo IP Stampante") },
-                            modifier = Modifier.weight(2f),
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedContainerColor = Color(0xFF26262E),
-                                unfocusedContainerColor = Color(0xFF26262E)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        FilterChip(
+                            selected = printerType == PrinterType.CANON_SELPHY_WIFI,
+                            onClick = {
+                                printerType = PrinterType.CANON_SELPHY_WIFI
+                                testResultText = null
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = { Text("Canon SELPHY CP1500 (Wi-Fi)", fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color.Black,
+                                containerColor = Color(0xFF2A2A34),
+                                labelColor = Color.White.copy(alpha = 0.7f)
                             )
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        OutlinedTextField(
-                            value = printerPort,
-                            onValueChange = { printerPort = it },
-                            label = { Text("Porta IPP") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedContainerColor = Color(0xFF26262E),
-                                unfocusedContainerColor = Color(0xFF26262E)
+                        FilterChip(
+                            selected = printerType == PrinterType.DNP_DS40_USB,
+                            onClick = {
+                                printerType = PrinterType.DNP_DS40_USB
+                                testResultText = null
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Usb, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = { Text("DNP DS40 (Cavo USB)", fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color.Black,
+                                containerColor = Color(0xFF2A2A34),
+                                labelColor = Color.White.copy(alpha = 0.7f)
                             )
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    keyboardController?.hide()
-                                    isTestingConnection = true
-                                    testResultText = null
-                                    val port = printerPort.toIntOrNull() ?: 631
-                                    val res = printer.getPrinterStatus(printerIp.trim(), port)
-                                    isTestingConnection = false
-                                    testResultText = res.message
-                                    testResultColor = when (res.state) {
-                                        PrinterState.IDLE -> Color(0xFF81C784)
-                                        PrinterState.PROCESSING -> Color(0xFFFFD54F)
-                                        else -> Color(0xFFFF5252)
-                                    }
-                                }
-                            },
-                            enabled = !isTestingConnection
-                        ) {
-                            if (isTestingConnection) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                            } else {
-                                Icon(Icons.Default.NetworkCheck, contentDescription = null, tint = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text("Testa Connessione", color = Color.White)
+                    if (printerType == PrinterType.CANON_SELPHY_WIFI) {
+                        // Configurazione Canon Wi-Fi IPP
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = printerIp,
+                                onValueChange = { printerIp = it },
+                                label = { Text("Indirizzo IP Stampante") },
+                                modifier = Modifier.weight(2f),
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedContainerColor = Color(0xFF26262E),
+                                    unfocusedContainerColor = Color(0xFF26262E)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            OutlinedTextField(
+                                value = printerPort,
+                                onValueChange = { printerPort = it },
+                                label = { Text("Porta IPP") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedContainerColor = Color(0xFF26262E),
+                                    unfocusedContainerColor = Color(0xFF26262E)
+                                )
+                            )
                         }
 
-                        if (testResultText != null) {
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = testResultText ?: "",
-                                color = testResultColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        keyboardController?.hide()
+                                        isTestingConnection = true
+                                        testResultText = null
+                                        val port = printerPort.toIntOrNull() ?: 631
+                                        val res = printer.getPrinterStatus(printerIp.trim(), port)
+                                        isTestingConnection = false
+                                        testResultText = res.message
+                                        testResultColor = when (res.state) {
+                                            PrinterState.IDLE -> Color(0xFF81C784)
+                                            PrinterState.PROCESSING -> Color(0xFFFFD54F)
+                                            else -> Color(0xFFFF5252)
+                                        }
+                                    }
+                                },
+                                enabled = !isTestingConnection
+                            ) {
+                                if (isTestingConnection) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                } else {
+                                    Icon(Icons.Default.NetworkCheck, contentDescription = null, tint = Color.White)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text("Testa Connessione Wi-Fi", color = Color.White)
+                            }
+
+                            if (testResultText != null) {
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = testResultText ?: "",
+                                    color = testResultColor,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    } else {
+                        // Configurazione DNP DS40 via cavo USB
+                        val connectedDnp = remember { dnpPrinter.findConnectedDevice() }
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFF1E1E28),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFF333340))
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Usb, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (connectedDnp != null) "✓ DNP DS40 Rilevata su porta USB" else "Nessuna stampante DNP DS40 rilevata su USB",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = if (connectedDnp != null) Color(0xFF81C784) else Color(0xFFFFB74D)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Collega la DNP DS40 alla porta USB del tablet con cavo USB-C/OTG (300 DPI nativi, stampa in 8.9s).",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.6f)
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            scope.launch {
+                                                isTestingConnection = true
+                                                testResultText = null
+                                                val dev = dnpPrinter.findConnectedDevice()
+                                                if (dev == null) {
+                                                    isTestingConnection = false
+                                                    testResultText = "Nessun dispositivo USB DNP trovato"
+                                                    testResultColor = Color(0xFFFF5252)
+                                                } else if (!dnpPrinter.hasPermission(dev)) {
+                                                    dnpPrinter.requestPermission(dev) { granted ->
+                                                        isTestingConnection = false
+                                                        if (granted) {
+                                                            testResultText = "Permesso USB concesso!"
+                                                            testResultColor = Color(0xFF81C784)
+                                                        } else {
+                                                            testResultText = "Permesso USB negato dall'utente"
+                                                            testResultColor = Color(0xFFFF5252)
+                                                        }
+                                                    }
+                                                } else {
+                                                    val res = dnpPrinter.getPrinterStatus()
+                                                    isTestingConnection = false
+                                                    testResultText = res.message
+                                                    testResultColor = when (res.state) {
+                                                        PrinterState.IDLE -> Color(0xFF81C784)
+                                                        PrinterState.PROCESSING -> Color(0xFFFFD54F)
+                                                        else -> Color(0xFFFF5252)
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        enabled = !isTestingConnection
+                                    ) {
+                                        if (isTestingConnection) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        } else {
+                                            Icon(Icons.Default.Usb, contentDescription = null, tint = Color.White)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        Text("Testa / Autorizza USB DNP", color = Color.White)
+                                    }
+
+                                    if (testResultText != null) {
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = testResultText ?: "",
+                                            color = testResultColor,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Switch Taglio 2x6 per DNP
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Taglio automatico 2x6\" (Lama interna DS40)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = "Taglia automaticamente il foglio 10x15 in due strisce 2x6 pollici separate",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Switch(
+                                checked = dnpCut2x6,
+                                onCheckedChange = { dnpCut2x6 = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF555555)
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Switch Finitura Opaca / Lucida DNP
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Finitura Opaca (Matte)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = if (dnpMatte) "Finitura Opaca (Matte) attivata" else "Finitura Lucida (Glossy) standard",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Switch(
+                                checked = dnpMatte,
+                                onCheckedChange = { dnpMatte = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF555555)
+                                )
                             )
                         }
                     }

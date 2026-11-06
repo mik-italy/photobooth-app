@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.photobooth.app.R
 import com.photobooth.app.data.FontChoice
 import com.photobooth.app.data.LayoutMode
+import com.photobooth.app.data.PrinterType
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.PrinterState
 
@@ -110,12 +112,15 @@ fun IdleScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val (dotColor, text) = when (printerState) {
-                    PrinterState.IDLE -> Pair(Color.White, "Canon SELPHY: Pronta")
-                    PrinterState.PROCESSING -> Pair(Color(0xFFDDDDDD), "Canon SELPHY: In Stampa...")
-                    PrinterState.STOPPED -> Pair(Color(0xFF888888), "Canon SELPHY: Attenzione / Carta")
-                    PrinterState.OFFLINE -> Pair(Color(0xFF555555), "Canon SELPHY: Offline")
-                    PrinterState.UNKNOWN -> Pair(Color(0xFF666666), "Canon SELPHY: Connessione...")
+                val isDnp = settings.printerType == PrinterType.DNP_DS40_USB
+                val printerName = if (isDnp) "DNP DS40 (USB)" else "Canon SELPHY"
+
+                val (dotColor, statusMsg) = when (printerState) {
+                    PrinterState.IDLE -> Pair(Color.White, "Pronta")
+                    PrinterState.PROCESSING -> Pair(Color(0xFFDDDDDD), "In Stampa...")
+                    PrinterState.STOPPED -> Pair(Color(0xFF888888), if (isDnp) "Attenzione / Carta" else "Attenzione / Carta")
+                    PrinterState.OFFLINE -> Pair(Color(0xFF555555), if (isDnp) "Disconnessa (USB)" else "Offline")
+                    PrinterState.UNKNOWN -> Pair(Color(0xFF666666), "Connessione...")
                 }
 
                 Box(
@@ -125,14 +130,14 @@ fun IdleScreen(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Icon(
-                    imageVector = Icons.Default.Print,
+                    imageVector = if (isDnp) Icons.Default.Usb else Icons.Default.Print,
                     contentDescription = null,
                     tint = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = text,
+                    text = "$printerName: $statusMsg",
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium

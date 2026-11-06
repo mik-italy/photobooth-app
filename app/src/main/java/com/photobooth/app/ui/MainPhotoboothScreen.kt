@@ -27,8 +27,10 @@ import androidx.core.content.ContextCompat
 import com.photobooth.app.composer.PhotoStripComposer
 import com.photobooth.app.data.AppSettings
 import com.photobooth.app.data.LayoutMode
+import com.photobooth.app.data.PrinterType
 import com.photobooth.app.data.SettingsData
 import com.photobooth.app.printer.CanonSelphyPrinter
+import com.photobooth.app.printer.DnpDs40UsbPrinter
 import com.photobooth.app.printer.PrinterState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -43,6 +45,7 @@ fun MainPhotoboothScreen(
     val scope = rememberCoroutineScope()
     val appSettings = remember { AppSettings(context) }
     val printer = remember { CanonSelphyPrinter(context) }
+    val dnpPrinter = remember { DnpDs40UsbPrinter(context) }
 
     var settings by remember { mutableStateOf(appSettings.loadSettings()) }
     var screenState by remember { mutableStateOf<PhotoboothScreenState>(PhotoboothScreenState.Idle) }
@@ -75,13 +78,17 @@ fun MainPhotoboothScreen(
         }
     }
 
-    // Controllo periodico stato stampante Canon SELPHY durante schermata Idle
-    LaunchedEffect(screenState, settings.printerIp, settings.printerPort, settings.isPaused) {
+    // Controllo periodico stato stampante attiva (Canon SELPHY o DNP DS40 USB) durante schermata Idle
+    LaunchedEffect(screenState, settings.printerType, settings.printerIp, settings.printerPort, settings.isPaused) {
         if (screenState is PhotoboothScreenState.Idle && !settings.isPaused) {
             while (isActive) {
-                val res = printer.getPrinterStatus(settings.printerIp, settings.printerPort)
+                val res = if (settings.printerType == PrinterType.DNP_DS40_USB) {
+                    dnpPrinter.getPrinterStatus()
+                } else {
+                    printer.getPrinterStatus(settings.printerIp, settings.printerPort)
+                }
                 printerState = res.state
-                delay(10000)
+                delay(if (settings.printerType == PrinterType.DNP_DS40_USB) 4000 else 10000)
             }
         }
     }
@@ -169,60 +176,114 @@ fun MainPhotoboothScreen(
                         printerState = printerState,
                         onPrintClicked = { copiesCount ->
                             val bitmapToPrint = state.composedBitmap
-                            val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
-                            val totalWait = settings.printTimeoutSeconds * copiesCount
+                            val isDnp = settings.printerType == PrinterType.DNP_DS40_USB
 
-                            if (settings.waitForPrinterFinish) {
+                            if (isDnp) {
+                                // STAMPA VIA CAVO USB SU DNP DS40 (300 DPI nativi, ~9s per stampa)
+                                val timeoutDnp = maxOf(20, 15 * copiesCount)
                                 screenState = PhotoboothScreenState.Printing(
-                                    remainingSeconds = totalWait,
-                                    statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
+                                    remainingSeconds = timeoutDnp,
+                                    statusMessage = "Invio lavoro a DNP DS40 via USB ($copiesCount copie)...",
                                     isCompleted = false
                                 )
 
                                 printJob = scope.launch {
-                                    val printResult = printer.printDirect(
-                                        ip = settings.printerIp,
-                                        port = settings.printerPort,
-                                        jpegBytes = jpegBytes,
+                                    val cut2x6Enabled = settings.dnpCut2x6 &&
+                                        (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS ||
+                                         settings.layoutMode == LayoutMode.STRIP_3_PHOTOS ||
+                                         settings.layoutMode == LayoutMode.STRIP_2_PHOTOS)
+
+                                    val printResult = dnpPrinter.printBitmap(
+                                        bitmap = bitmapToPrint,
                                         copies = copiesCount,
-                                        jobName = "Photobooth ${settings.eventTitle}"
+                                        cut2x6 = cut2x6Enabled,
+                                        isMatte = settings.dnpMatte
                                     )
 
                                     if (printResult.isFailure) {
-                                        android.util.Log.e("MainPhotobooth", "Stampa diretta IPP non riuscita: ${printResult.exceptionOrNull()?.message}")
+                                        android.util.Log.e("MainPhotobooth", "Stampa DNP USB non riuscita: ${printResult.exceptionOrNull()?.message}")
                                     }
 
-                                    printer.waitForPrintCompletion(
-                                        ip = settings.printerIp,
-                                        port = settings.printerPort,
-                                        maxWaitSeconds = totalWait
-                                    ) { remaining, msg ->
-                                        screenState = PhotoboothScreenState.Printing(
-                                            remainingSeconds = remaining,
-                                            statusMessage = msg,
-                                            isCompleted = false
-                                        )
+                                    if (settings.waitForPrinterFinish) {
+                                        dnpPrinter.waitForPrintCompletion(
+                                            maxWaitSeconds = timeoutDnp
+                                        ) { remaining, msg ->
+                                            screenState = PhotoboothScreenState.Printing(
+                                                remainingSeconds = remaining,
+                                                statusMessage = msg,
+                                                isCompleted = false
+                                            )
+                                        }
+                                    } else {
+                                        delay(3000)
                                     }
 
                                     screenState = PhotoboothScreenState.Printing(
                                         remainingSeconds = 0,
-                                        statusMessage = "Stampa completata ($copiesCount copie)!",
+                                        statusMessage = "Stampa completata su DNP DS40 ($copiesCount copie)!",
                                         isCompleted = true
                                     )
 
-                                    delay(4500)
+                                    delay(4000)
                                     screenState = PhotoboothScreenState.Idle
                                 }
                             } else {
-                                printJob = scope.launch {
-                                    printer.printDirect(
-                                        ip = settings.printerIp,
-                                        port = settings.printerPort,
-                                        jpegBytes = jpegBytes,
-                                        copies = copiesCount
+                                // STAMPA WI-FI SU CANON SELPHY CP1500 (IPP)
+                                val jpegBytes = PhotoStripComposer.toJpegByteArray(bitmapToPrint)
+                                val totalWait = settings.printTimeoutSeconds * copiesCount
+
+                                if (settings.waitForPrinterFinish) {
+                                    screenState = PhotoboothScreenState.Printing(
+                                        remainingSeconds = totalWait,
+                                        statusMessage = "Invio lavoro alla Canon SELPHY CP1500 ($copiesCount copie)...",
+                                        isCompleted = false
                                     )
-                                    delay(2000)
-                                    screenState = PhotoboothScreenState.Idle
+
+                                    printJob = scope.launch {
+                                        val printResult = printer.printDirect(
+                                            ip = settings.printerIp,
+                                            port = settings.printerPort,
+                                            jpegBytes = jpegBytes,
+                                            copies = copiesCount,
+                                            jobName = "Photobooth ${settings.eventTitle}"
+                                        )
+
+                                        if (printResult.isFailure) {
+                                            android.util.Log.e("MainPhotobooth", "Stampa diretta IPP non riuscita: ${printResult.exceptionOrNull()?.message}")
+                                        }
+
+                                        printer.waitForPrintCompletion(
+                                            ip = settings.printerIp,
+                                            port = settings.printerPort,
+                                            maxWaitSeconds = totalWait
+                                        ) { remaining, msg ->
+                                            screenState = PhotoboothScreenState.Printing(
+                                                remainingSeconds = remaining,
+                                                statusMessage = msg,
+                                                isCompleted = false
+                                            )
+                                        }
+
+                                        screenState = PhotoboothScreenState.Printing(
+                                            remainingSeconds = 0,
+                                            statusMessage = "Stampa completata ($copiesCount copie)!",
+                                            isCompleted = true
+                                        )
+
+                                        delay(4500)
+                                        screenState = PhotoboothScreenState.Idle
+                                    }
+                                } else {
+                                    printJob = scope.launch {
+                                        printer.printDirect(
+                                            ip = settings.printerIp,
+                                            port = settings.printerPort,
+                                            jpegBytes = jpegBytes,
+                                            copies = copiesCount
+                                        )
+                                        delay(2000)
+                                        screenState = PhotoboothScreenState.Idle
+                                    }
                                 }
                             }
                         },
