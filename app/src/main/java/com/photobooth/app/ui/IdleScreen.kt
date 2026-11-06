@@ -215,7 +215,7 @@ fun IdleScreen(
             }
         }
 
-        // Selettore Formato Inferiore: "4 FOTO" e "1 FOTO" (Minimale Monocromatico)
+        // Selettore Formato Inferiore: "4 FOTO", "3 FOTO", "2 FOTO" e "1 FOTO" (Minimale Monocromatico)
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -226,50 +226,37 @@ fun IdleScreen(
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    selected = settings.layoutMode == LayoutMode.STRIP_4_PHOTOS,
-                    onClick = { onToggleLayoutMode(LayoutMode.STRIP_4_PHOTOS) },
-                    label = {
-                        Text(
-                            text = "4 FOTO",
-                            fontSize = 15.sp,
-                            fontWeight = if (settings.layoutMode == LayoutMode.STRIP_4_PHOTOS) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color.White,
-                        selectedLabelColor = Color.Black,
-                        containerColor = Color.Transparent,
-                        labelColor = Color.White.copy(alpha = 0.6f)
-                    ),
-                    border = null,
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.height(44.dp)
-                )
-
-                FilterChip(
-                    selected = settings.layoutMode == LayoutMode.SINGLE_PHOTO,
-                    onClick = { onToggleLayoutMode(LayoutMode.SINGLE_PHOTO) },
-                    label = {
-                        Text(
-                            text = "1 FOTO",
-                            fontSize = 15.sp,
-                            fontWeight = if (settings.layoutMode == LayoutMode.SINGLE_PHOTO) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color.White,
-                        selectedLabelColor = Color.Black,
-                        containerColor = Color.Transparent,
-                        labelColor = Color.White.copy(alpha = 0.6f)
-                    ),
-                    border = null,
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.height(44.dp)
-                )
+                listOf(
+                    LayoutMode.STRIP_4_PHOTOS to "4 FOTO",
+                    LayoutMode.STRIP_3_PHOTOS to "3 FOTO",
+                    LayoutMode.STRIP_2_PHOTOS to "2 FOTO",
+                    LayoutMode.SINGLE_PHOTO to "1 FOTO"
+                ).forEach { (mode, label) ->
+                    val isSelected = settings.layoutMode == mode
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onToggleLayoutMode(mode) },
+                        label = {
+                            Text(
+                                text = label,
+                                fontSize = 15.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color.White,
+                            selectedLabelColor = Color.Black,
+                            containerColor = Color.Transparent,
+                            labelColor = Color.White.copy(alpha = 0.6f)
+                        ),
+                        border = null,
+                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier.height(44.dp)
+                    )
+                }
             }
         }
     }

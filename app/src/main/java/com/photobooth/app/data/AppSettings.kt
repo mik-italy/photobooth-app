@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 
 enum class LayoutMode {
-    STRIP_4_PHOTOS,   // 4 FOTO (Doppia striscia 2x6)
+    STRIP_4_PHOTOS,   // 4 FOTO (Doppia striscia verticale 2x6)
+    STRIP_3_PHOTOS,   // 3 FOTO (Doppia striscia verticale 2x6)
+    STRIP_2_PHOTOS,   // 2 FOTO (Doppia striscia orizzontale 6x2)
     SINGLE_PHOTO      // 1 FOTO (Foto unica orizzontale 10x15)
 }
 
@@ -37,6 +39,8 @@ data class SettingsData(
     val totalShots: Int
         get() = when (layoutMode) {
             LayoutMode.STRIP_4_PHOTOS -> 4
+            LayoutMode.STRIP_3_PHOTOS -> 3
+            LayoutMode.STRIP_2_PHOTOS -> 2
             LayoutMode.SINGLE_PHOTO -> 1
         }
 }

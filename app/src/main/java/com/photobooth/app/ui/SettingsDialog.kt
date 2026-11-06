@@ -397,34 +397,62 @@ fun SettingsDialog(
 
                     Divider(modifier = Modifier.padding(vertical = 14.dp), color = Color.White.copy(alpha = 0.1f))
 
-                    // SECTION 1: Formato Predefinito (Foglio A5)
+                    // SECTION 1: Formato Predefinito (Canon SELPHY 10x15 cm)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.PhotoAlbum, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "FORMATO DI STAMPA PREDEFINITO (A5 - 148 x 210 mm)",
+                                text = "FORMATO DI STAMPA PREDEFINITO (10 x 15 cm / 300 DPI)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Risoluzione di stampa: 300 DPI (1748 x 2480 px)",
+                                text = "Risoluzione nativa Canon SELPHY CP1500 (1200 x 1800 px) - Stampa al vivo senza bordi",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.5f)
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         FilterChip(
                             selected = layoutMode == LayoutMode.STRIP_4_PHOTOS,
                             onClick = { layoutMode = LayoutMode.STRIP_4_PHOTOS },
-                            label = { Text("4 FOTO (Doppia Striscia A5)", fontWeight = FontWeight.Bold) },
+                            label = { Text("4 FOTO (Doppia Striscia 2x6\")", fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color.Black,
+                                containerColor = Color(0xFF2A2A34),
+                                labelColor = Color.White.copy(alpha = 0.7f)
+                            )
+                        )
+                        FilterChip(
+                            selected = layoutMode == LayoutMode.STRIP_3_PHOTOS,
+                            onClick = { layoutMode = LayoutMode.STRIP_3_PHOTOS },
+                            label = { Text("3 FOTO (Doppia Striscia 2x6\")", fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.White,
+                                selectedLabelColor = Color.Black,
+                                containerColor = Color(0xFF2A2A34),
+                                labelColor = Color.White.copy(alpha = 0.7f)
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        FilterChip(
+                            selected = layoutMode == LayoutMode.STRIP_2_PHOTOS,
+                            onClick = { layoutMode = LayoutMode.STRIP_2_PHOTOS },
+                            label = { Text("2 FOTO (Striscia Orizzontale)", fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.White,
                                 selectedLabelColor = Color.Black,
@@ -435,7 +463,7 @@ fun SettingsDialog(
                         FilterChip(
                             selected = layoutMode == LayoutMode.SINGLE_PHOTO,
                             onClick = { layoutMode = LayoutMode.SINGLE_PHOTO },
-                            label = { Text("1 FOTO (Foto Orizzontale A5)", fontWeight = FontWeight.Bold) },
+                            label = { Text("1 FOTO (Foto Singola 10x15)", fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.White,
                                 selectedLabelColor = Color.Black,
@@ -656,14 +684,14 @@ fun SettingsDialog(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Sfondo Immagine: 4 FOTO A5
+                    // Sfondo Immagine: Strisce Verticali (4 FOTO e 3 FOTO)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Immagine di sfondo per 4 FOTO (A5):", color = Color.White, fontSize = 13.sp)
+                            Text("Sfondo Strisce Verticali (4 FOTO e 3 FOTO - 1200x1800 px):", color = Color.White, fontSize = 13.sp)
                             Text(
                                 text = if (stripBgPath != null) "✓ Immagine attiva" else "Usa colore tinta unita ($stripBgColor)",
                                 color = if (stripBgPath != null) Color(0xFF81C784) else Color.White.copy(alpha = 0.5f),
@@ -687,14 +715,14 @@ fun SettingsDialog(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Sfondo Immagine: 1 FOTO A5
+                    // Sfondo Immagine: Formati Orizzontali (2 FOTO e 1 FOTO)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Immagine di sfondo per 1 FOTO (A5):", color = Color.White, fontSize = 13.sp)
+                            Text("Sfondo Formati Orizzontali (2 FOTO e 1 FOTO - 1800x1200 px):", color = Color.White, fontSize = 13.sp)
                             Text(
                                 text = if (singleBgPath != null) "✓ Immagine attiva" else "Usa colore tinta unita ($stripBgColor)",
                                 color = if (singleBgPath != null) Color(0xFF81C784) else Color.White.copy(alpha = 0.5f),

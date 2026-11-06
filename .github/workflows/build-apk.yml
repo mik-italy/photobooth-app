@@ -38,16 +38,17 @@ jobs:
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.1.0
-        name: "Photobooth App v1.1.0 - Default IP 192.168.0.1, Maxi Testi Attesa, Pulsanti Grandi & No Testo Foto Default"
+        tag_name: v1.1.1
+        name: "Photobooth App v1.1.1 - Nuove Opzioni 3 Foto Verticali e 2 Foto Orizzontali"
         body: |
-          ### Photobooth Android v1.1.0 📸🖨️
+          ### Photobooth Android v1.1.1 📸🖨️
           
           Nuovi aggiornamenti:
-          - **IP Default Canon 192.168.0.1:** indirizzo IP predefinito aggiornato a `192.168.0.1`.
-          - **Maxi Testi di Attesa Stampa:** messaggi di intrattenimento in stampa ingranditi (66sp, grande formato come il titolo 'Photobooth' della Home) con sottotitoli e suggerimenti accessori ben visibili a distanza.
-          - **Comandi 'Rifai' e 'Torna alla Home' Ingranditi:** pulsanti nell'anteprima foto ora grandi 66dp con caratteri evidenti (18sp Bold) esattamente come il pulsante principale di stampa.
-          - **Testo Sotto Foto Disattivato di Default:** sulle stampe il testo personalizzato è ora disattivato di base (può sempre essere riattivato da Impostazioni, mentre nella Home rimane sempre visibile).
+          - **Nuova opzione 3 FOTO (Doppia Striscia Verticale 2x6"):** 3 scatti organizzati in verticale su ciascuna striscia 600x1800 px con foto ingrandite (528x440 px), linea di taglio tratteggiata centrale a 600 px e footer dedicato per testo o grafica.
+          - **Nuova opzione 2 FOTO (Doppia Striscia Orizzontale 6x2"):** 2 scatti affiancati orizzontalmente (640x480 px ciascuno, rapporto 4:3) con area dedicata per logo/testo sulla destra (400 px) e linea di taglio tratteggiata centrale a Y = 600 px.
+          - **Selettore Home e Impostazioni a 4 Formati:** switch immediato tra `4 FOTO`, `3 FOTO`, `2 FOTO` e `1 FOTO` sia dalla barra inferiore minimal monocromatica in Home sia dalle Impostazioni.
+          - **Acquisizione dinamica:** indicatore scatti in tempo reale e pallini di progressione sincronizzati automaticamente sul numero di foto scelte (1, 2, 3 o 4 scatti).
+          - **Nuovi Template Grafici:** aggiunti i template PNG guida e trasparenti a 300 DPI per tutti e 4 i formati di stampa.
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
